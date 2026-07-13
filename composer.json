@@ -1,6 +1,6 @@
 {
   "name": "mafio69/ovh-ocr",
-  "description": "Biblioteka PHP do wydobywania tekstu z obrazów - Visual LLM (OVH AI Endpoints) z opcjonalnym fallbackiem do Google Vision. Obsługa PL/EN.",
+  "description": "PHP library for extracting text from images - Visual LLM (OVH AI Endpoints) with optional fallback to Google Vision. Support PL/EN.",
   "type": "library",
   "license": "MIT",
   "authors": [
@@ -20,7 +20,7 @@
     "vlucas/phpdotenv": "^5.5"
   },
   "suggest": {
-    "vlucas/phpdotenv": "Do wczytywania konfiguracji z pliku .env w aplikacjach"
+    "vlucas/phpdotenv": "To load configurations from an .env file in applications"
   },
   "autoload": {
     "psr-4": {

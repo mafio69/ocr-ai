@@ -2,6 +2,8 @@
 
 namespace OvhOcr\i18n;
 
+use RuntimeException;
+
 class LocaleLoader
 {
     private string $localesPath;
@@ -31,14 +33,14 @@ class LocaleLoader
         $file = $this->localesPath . '/' . $locale . '.json';
 
         if (!file_exists($file)) {
-            throw new \RuntimeException("Locale file not found: {$file}");
+            throw new RuntimeException("Locale file not found: {$file}");
         }
 
         $content = file_get_contents($file);
         $decoded = json_decode($content, true);
 
         if (!is_array($decoded)) {
-            throw new \RuntimeException("Invalid JSON in locale file: {$file}");
+            throw new RuntimeException("Invalid JSON in locale file: {$file}");
         }
 
         return $decoded;

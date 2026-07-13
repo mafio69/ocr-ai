@@ -4,6 +4,7 @@ namespace OvhOcr\Error;
 
 use OvhOcr\Exceptions\OcrException;
 use OvhOcr\Logging\Logger;
+use Throwable;
 
 class ErrorHandler
 {
@@ -19,7 +20,7 @@ class ErrorHandler
     /**
      * Obsługa wyjątków
      */
-    public function handle(\Throwable $exception): ErrorResponse
+    public function handle(Throwable $exception): ErrorResponse
     {
         $this->logException($exception);
 
@@ -41,7 +42,7 @@ class ErrorHandler
         );
     }
 
-    private function handleGenericException(\Throwable $e): ErrorResponse
+    private function handleGenericException(Throwable $e): ErrorResponse
     {
         $userMessage = $this->isDevelopment 
             ? $e->getMessage()
@@ -55,7 +56,7 @@ class ErrorHandler
         );
     }
 
-    private function logException(\Throwable $exception): void
+    private function logException(Throwable $exception): void
     {
         $this->logger->error(
             message: $exception->getMessage(),
