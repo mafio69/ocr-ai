@@ -10,7 +10,6 @@ class OcrException extends Exception
     private array $context = [];
     private ?string $userMessageKey = null;
     private array $userMessageParams = [];
-    private static ?Translator $translator = null;
 
     public function __construct(
         string $message,
@@ -27,11 +26,6 @@ class OcrException extends Exception
         $this->userMessageParams = $userMessageParams;
     }
 
-    public static function setTranslator(Translator $translator): void
-    {
-        self::$translator = $translator;
-    }
-
     public function getContext(): array
     {
         return $this->context;
@@ -40,13 +34,17 @@ class OcrException extends Exception
     /**
      * Zwraca przetłumaczoną wiadomość dla użytkownika
      */
-    public function getUserMessage(): string
+    public function getUserMessage(?Translator $translator = null): string
     {
-        if (!self::$translator || !$this->userMessageKey) {
+        if (!$this->userMessageKey) {
             return "Coś poszło nie tak. Spróbuj później 🤷";
         }
 
-        return self::$translator->trans($this->userMessageKey, $this->userMessageParams);
+        if (!$translator) {
+            return $this->userMessageKey;
+        }
+
+        return $translator->trans($this->userMessageKey, $this->userMessageParams);
     }
 
     public function getUserMessageKey(): ?string

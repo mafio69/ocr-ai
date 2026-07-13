@@ -42,6 +42,8 @@ echo "=== OVH OCR ===\n";
 echo "Plik: {$imagePath}\n";
 echo "Rozmiar: " . round(filesize($imagePath) / 1024, 2) . " KB\n\n";
 
+$translator = null;
+
 try {
     // ============================================================
     // 3. Setup: i18n + logger + klient
@@ -100,7 +102,7 @@ try {
     }
 
 } catch (OcrException $e) {
-    fwrite(STDERR, "\nBLAD: " . $e->getUserMessage() . "\n");
+    fwrite(STDERR, "\nBLAD: " . $e->getUserMessage($translator) . "\n");
     fwrite(STDERR, "Szczegóły techniczne: " . $e->getMessage() . "\n");
     fwrite(STDERR, "Zobacz log: " . ($_ENV['LOG_FILE'] ?? 'storage/logs/ocr.log') . "\n");
     exit(2);

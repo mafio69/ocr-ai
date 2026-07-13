@@ -88,8 +88,6 @@ class OcrClient
             'connect_timeout' => 10,
         ]);
 
-        OcrException::setTranslator($translator);
-
         $this->logger->info('OcrClient initialized', [
             'endpoint' => $apiEndpoint,
             'strategy' => $this->modelStrategy,
@@ -173,7 +171,7 @@ class OcrClient
             try {
                 $results[$path] = $this->extractText($path, $language);
             } catch (OcrException $e) {
-                $results[$path] = ['error' => $e->getUserMessage()];
+                $results[$path] = ['error' => $e->getUserMessage($this->translator)];
                 $this->logger->error("Batch item failed: {$path}", ['reason' => $e->getMessage()]);
             }
         }

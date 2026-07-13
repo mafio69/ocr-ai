@@ -3,17 +3,20 @@
 namespace OvhOcr\Error;
 
 use OvhOcr\Exceptions\OcrException;
+use OvhOcr\i18n\Translator;
 use OvhOcr\Logging\Logger;
 use Throwable;
 
 class ErrorHandler
 {
     private Logger $logger;
+    private Translator $translator;
     private bool $isDevelopment;
 
-    public function __construct(Logger $logger, bool $isDevelopment = false)
+    public function __construct(Logger $logger, Translator $translator, bool $isDevelopment = false)
     {
         $this->logger = $logger;
+        $this->translator = $translator;
         $this->isDevelopment = $isDevelopment;
     }
 
@@ -34,7 +37,7 @@ class ErrorHandler
     private function handleOcrException(OcrException $e): ErrorResponse
     {
         return new ErrorResponse(
-            userMessage: $e->getUserMessage(),
+            userMessage: $e->getUserMessage($this->translator),
             internalMessage: $e->getMessage(),
             context: $e->getContext(),
             code: 'OCR_ERROR',
@@ -46,7 +49,7 @@ class ErrorHandler
     {
         $userMessage = $this->isDevelopment 
             ? $e->getMessage()
-            : "Coś poszło nie tak... spróbuj później 🤷";
+            : $this->translator->trans('errors.unexpected_error');
 
         return new ErrorResponse(
             userMessage: $userMessage,

@@ -9,12 +9,13 @@ use OvhOcr\i18n\LocaleLoader;
 
 class OcrExceptionTest extends TestCase
 {
+    private Translator $translator;
+
     protected function setUp(): void
     {
-        $translator = new Translator('pl', 'en');
+        $this->translator = new Translator('pl', 'en');
         $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
-        $loader->loadAll($translator);
-        OcrException::setTranslator($translator);
+        $loader->loadAll($this->translator);
     }
 
     public function testInternalMessageStaysTechnical(): void
@@ -26,7 +27,7 @@ class OcrExceptionTest extends TestCase
     public function testUserMessageComesFromTranslation(): void
     {
         $e = new OcrException('technical', 'errors.file_not_found');
-        $this->assertStringContainsString('zdjęcia', $e->getUserMessage());
+        $this->assertStringContainsString('zdjęcia', $e->getUserMessage($this->translator));
     }
 
     public function testContextIsPreserved(): void
@@ -44,18 +45,21 @@ class OcrExceptionTest extends TestCase
             [],
             ['size' => 25, 'max_size' => 20]
         );
-        $msg = $e->getUserMessage();
-        // Klucz istnieje w pl.json - powinien być normalny string, nie klucz
+        $msg = $e->getUserMessage($this->translator);
         $this->assertNotSame('errors.file_too_large', $msg);
     }
 
     public function testFallbackWhenNoTranslator(): void
     {
-        // Zresetuj translator (używamy reflection lub innego sposobu)
-        // W praktyce - jeśli klucz nie istnieje, dostaniemy klucz
         $e = new OcrException('msg', 'nonexistent.key');
         $msg = $e->getUserMessage();
-        // Powinno cos zwrócić (klucz albo default)
-        $this->assertIsString($msg);
+        $this->assertSame('nonexistent.key', $msg);
+    }
+
+    public function testFallbackWhenNoKey(): void
+    {
+        $e = new OcrException('msg');
+        $msg = $e->getUserMessage($this->translator);
+        $this->assertStringContainsString('poszło nie tak', $msg);
     }
 }

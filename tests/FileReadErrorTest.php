@@ -61,8 +61,6 @@ class FileReadErrorTest extends TestCase
 
     public function testOcrExceptionWithFileReadError(): void
     {
-        OcrException::setTranslator($this->translator);
-        
         $exception = new OcrException(
             message: 'Failed to read file: /path/to/file.jpg',
             userMessageKey: 'errors.file_read_error',
@@ -74,7 +72,7 @@ class FileReadErrorTest extends TestCase
         $this->assertSame(500, $exception->getCode());
         $this->assertArrayHasKey('file', $exception->getContext());
         
-        $userMessage = $exception->getUserMessage();
+        $userMessage = $exception->getUserMessage($this->translator);
         $this->assertStringContainsString('pliku', $userMessage);
     }
 }

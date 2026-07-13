@@ -3,7 +3,7 @@
 **Date:** 2026-07-13  
 **Project:** OVH OCR (PHP library for Visual LLM OCR)  
 **Reviewer:** opencode  
-**Tests Status:** 40 passed, 0 deprecations (after fixes)
+**Tests Status:** 41 passed, 0 deprecations (after fixes)
 
 ---
 
@@ -57,6 +57,35 @@
 
 ---
 
+### ✅ #4 Static mutable state in `OcrException::setTranslator()` - FIXED
+**Location:** `src/Exceptions/OcrException.php:13,30`
+
+**Changes made:**
+- Removed `static ?Translator $translator` property from OcrException
+- Removed `static setTranslator()` method
+- Changed `getUserMessage()` to accept optional `?Translator $translator` parameter
+- Updated `OcrClient::extractTextBatch()` to pass translator to `getUserMessage()`
+- Updated `ErrorHandler` constructor to accept `Translator` parameter
+- Updated `ErrorHandler::handleOcrException()` to pass translator to `getUserMessage()`
+- Updated `ErrorHandler::handleGenericException()` to use translator for fallback message
+- Updated `examples/example.php` to pass translator to `getUserMessage()`
+- Updated all tests to pass translator explicitly
+
+**Benefits:**
+- No more global state - multiple OcrClient instances can use different translators
+- No constructor side effects
+- Clear dependency injection - translator is passed where needed
+- Better testability - each test controls its own translator
+
+---
+
+### ✅ #18 Constructor side-effect: `OcrException::setTranslator()` - FIXED
+**Location:** `src/OcrClient.php:91`
+
+**Status:** ✅ FIXED - Removed `OcrException::setTranslator($translator)` call from OcrClient constructor. Translator is now passed explicitly where needed.
+
+---
+
 ## Critical Issues (4)
 
 ### 1. ~~Security: MIME type detection based on file extension~~ - FIXED
@@ -77,6 +106,13 @@
 **Location:** `src/OcrClient.php:193, 258`
 
 **Status:** ✅ FIXED - Added error checking with proper exception handling and i18n support.
+
+---
+
+### 4. ~~Static mutable state in `OcrException::setTranslator()`~~ - FIXED
+**Location:** `src/Exceptions/OcrException.php`
+
+**Status:** ✅ FIXED - Removed static state, translator now passed explicitly to `getUserMessage()`.
 
 ---
 
@@ -359,11 +395,11 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 
 | Severity | Count | Fixed | Remaining |
 |----------|-------|-------|-----------|
-| Critical | 4 | 3 | 1 |
+| Critical | 4 | 4 | 0 |
 | High | 6 | 0 | 6 |
 | Medium | 8 | 0 | 8 |
 | Low | 7 | 0 | 7 |
-| **Total** | **25** | **3** | **22** |
+| **Total** | **25** | **4** | **21** |
 
 ---
 
@@ -372,6 +408,16 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 1. ~~**Fix MIME type detection** - Use `finfo_file()` instead of extension-based detection~~ ✅ DONE
 2. ~~**Move API keys to headers** - Never put secrets in URLs~~ ✅ DONE
 3. **Make HTTP client injectable** - Enables proper testing and flexibility
+
+---
+
+## All P0 Issues - COMPLETED ✅
+
+- ✅ #1 MIME type detection (finfo_file)
+- ✅ #2 Google API key w headerze
+- ✅ #3 file_get_contents() error handling
+- ✅ #4 OcrException static translator
+- ✅ #18 OcrClient constructor side-effect (powiązany z #4)
 
 ---
 
