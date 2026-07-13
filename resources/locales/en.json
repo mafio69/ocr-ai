@@ -1,0 +1,21 @@
+{
+  "errors": {
+    "file_not_found": "Can't find that image 📸",
+    "invalid_format": "That doesn't look like an image - supported formats: {allowed} 📷",
+    "file_too_large": "Image is {size}MB, max allowed is {max_size}MB 📦",
+    "all_models_failed": "Even my biggest neurons gave up - no model worked 🧠💔",
+    "google_not_configured": "Google Vision is enabled but GOOGLE_API_KEY is missing 🔑",
+    "google_api_error": "Google is not responding 🤐",
+    "ovh_api_error": "OVH is having a rough day 📉",
+    "internal_error": "Something very strange happened 👽",
+    "unexpected_error": "Try again later (maybe tomorrow?) 🤷",
+    "invalid_input": "Invalid input data"
+  },
+  "messages": {
+    "extraction_started": "Starting text extraction...",
+    "attempting_model": "Trying model: {model}",
+    "model_success": "Model {model} worked!",
+    "model_failed": "Model {model} failed 😞",
+    "extraction_complete": "Text extracted successfully!"
+  }
+}

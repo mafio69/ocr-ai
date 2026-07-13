@@ -1,0 +1,56 @@
+{
+  "name": "mafio69/ovh-ocr",
+  "description": "Biblioteka PHP do wydobywania tekstu z obrazów - Visual LLM (OVH AI Endpoints) z opcjonalnym fallbackiem do Google Vision. Obsługa PL/EN.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "mafio69",
+      "email": "your-email@example.com"
+    }
+  ],
+  "require": {
+    "php": "^8.1",
+    "guzzlehttp/guzzle": "^7.5",
+    "ext-json": "*",
+    "ext-mbstring": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.0",
+    "vlucas/phpdotenv": "^5.5"
+  },
+  "suggest": {
+    "vlucas/phpdotenv": "Do wczytywania konfiguracji z pliku .env w aplikacjach"
+  },
+  "autoload": {
+    "psr-4": {
+      "OvhOcr\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "OvhOcr\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit --colors=always",
+    "test-coverage": "phpunit --coverage-text"
+  },
+  "keywords": [
+    "ocr",
+    "ovh",
+    "ai-endpoints",
+    "visual-llm",
+    "vision",
+    "text-extraction",
+    "image-to-text",
+    "multimodal",
+    "php"
+  ],
+  "homepage": "https://github.com/mafio69/ovh-ocr",
+  "support": {
+    "issues": "https://github.com/mafio69/ovh-ocr/issues",
+    "source": "https://github.com/mafio69/ovh-ocr"
+  },
+  "minimum-stability": "stable"
+}

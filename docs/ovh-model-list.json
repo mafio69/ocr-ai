@@ -1,0 +1,307 @@
+{
+  "models": [
+    {
+      "id": 1,
+      "name": "Qwen3.6-27B",
+      "category": "Visual LLM",
+      "status": "new",
+      "licence": "Apache 2.0",
+      "parameters": "27B",
+      "quantization": "fp8",
+      "max_context_size": "262K",
+      "features": ["Function calling", "Multimodal", "Reasoning"],
+      "pricing": {
+        "input": "0.4€/Mtoken",
+        "output": "2.7€/Mtoken"
+      }
+    },
+    {
+      "id": 2,
+      "name": "Qwen3.5-397B-A17B",
+      "category": "Visual LLM",
+      "status": "new",
+      "licence": "Apache 2.0",
+      "parameters": "397B",
+      "quantization": "fp8",
+      "max_context_size": "262K",
+      "features": ["Function calling", "Multimodal", "Reasoning"],
+      "pricing": {
+        "input": "0.6€/Mtoken",
+        "output": "3.6€/Mtoken"
+      }
+    },
+    {
+      "id": 3,
+      "name": "Qwen3.5-9B",
+      "category": "Visual LLM",
+      "status": "new",
+      "licence": "Apache 2.0",
+      "parameters": "9.7B",
+      "quantization": "bf16",
+      "max_context_size": "262K",
+      "features": ["Function calling", "Multimodal", "Reasoning"],
+      "pricing": {
+        "input": "0.1€/Mtoken",
+        "output": "0.15€/Mtoken"
+      }
+    },
+    {
+      "id": 4,
+      "name": "Qwen3-Embedding-8B",
+      "category": "Embeddings",
+      "status": "new",
+      "licence": "Apache 2.0",
+      "parameters": "7.6B",
+      "quantization": "fp16",
+      "features": [],
+      "pricing": {
+        "input": "0.1€/Mtoken"
+      }
+    },
+    {
+      "id": 5,
+      "name": "Qwen3Guard-Gen-8B",
+      "category": "LLM Guard",
+      "status": "beta",
+      "licence": "Apache 2.0",
+      "parameters": "8B",
+      "quantization": "fp16",
+      "max_context_size": "32K",
+      "features": ["Moderation"],
+      "pricing": {
+        "cost": "Free"
+      }
+    },
+    {
+      "id": 6,
+      "name": "Qwen3Guard-Gen-0.6B",
+      "category": "LLM Guard",
+      "status": "beta",
+      "licence": "Apache 2.0",
+      "parameters": "0.6B",
+      "quantization": "fp16",
+      "max_context_size": "32K",
+      "features": ["Moderation"],
+      "pricing": {
+        "cost": "Free"
+      }
+    },
+    {
+      "id": 7,
+      "name": "gpt-oss-120b",
+      "category": "Reasoning LLM",
+      "status": "live",
+      "licence": "Apache 2.0",
+      "parameters": "117B",
+      "quantization": "fp4",
+      "max_context_size": "131K",
+      "features": ["Function calling", "Reasoning"],
+      "pricing": {
+        "input": "0.08€/Mtoken",
+        "output": "0.4€/Mtoken"
+      }
+    },
+    {
+      "id": 8,
+      "name": "gpt-oss-20b",
+      "category": "Reasoning LLM",
+      "status": "live",
+      "licence": "Apache 2.0",
+      "parameters": "21B",
+      "quantization": "fp4",
+      "max_context_size": "131K",
+      "features": ["Function calling", "Reasoning"],
+      "pricing": {
+        "input": "0.04€/Mtoken",
+        "output": "0.15€/Mtoken"
+      }
+    },
+    {
+      "id": 9,
+      "name": "whisper-large-v3-turbo",
+      "category": "Speech To Text",
+      "status": "live",
+      "licence": "Apache 2.0",
+      "parameters": "0.81B",
+      "quantization": "fp16",
+      "features": ["Automatic Speech Recognition"],
+      "pricing": {
+        "cost": "0.00001278€/second"
+      }
+    },
+    {
+      "id": 10,
+      "name": "whisper-large-v3",
+      "category": "Speech To Text",
+      "status": "live",
+      "licence": "Apache 2.0",
+      "parameters": "1.54B",
+      "quantization": "fp16",
+      "features": ["Automatic Speech Recognition"],
+      "pricing": {
+        "cost": "0.00004083€/second"
+      }
+    },
+    {
+      "id": 11,
+      "name": "Mistral-Small-3.2-24B-Instruct-2506",
+      "category": "Visual LLM",
+      "status": "live",
+      "licence": "Apache 2.0",
+      "parameters": "24B",
+      "quantization": "bf16",
+      "max_context_size": "128K",
+      "features": ["Function calling", "Multimodal"],
+      "pricing": {
+        "input": "0.09€/Mtoken",
+        "output": "0.28€/Mtoken"
+      }
+    },
+    {
+      "id": 12,
+      "name": "Meta-Llama-3.3-70B-Instruct",
+      "category": "Large Language Models (LLM)",
+      "status": "live",
+      "licence": "Llama 3.3 Community",
+      "parameters": "70B",
+      "quantization": "fp8",
+      "max_context_size": "131K",
+      "features": ["Function calling"],
+      "pricing": {
+        "input": "0.67€/Mtoken",
+        "output": "0.67€/Mtoken"
+      }
+    },
+    {
+      "id": 13,
+      "name": "Qwen2.5-VL-72B-Instruct",
+      "category": "Visual LLM",
+      "status": "live",
+      "licence": "Qwen",
+      "parameters": "72B",
+      "quantization": "fp8",
+      "max_context_size": "32K",
+      "features": ["Multimodal"],
+      "pricing": {
+        "input": "0.91€/Mtoken",
+        "output": "0.91€/Mtoken"
+      }
+    },
+    {
+      "id": 14,
+      "name": "bge-multilingual-gemma2",
+      "category": "Embeddings",
+      "status": "live",
+      "licence": "Gemma",
+      "parameters": "0.567B",
+      "quantization": "fp16",
+      "features": [],
+      "pricing": {
+        "input": "0.01€/Mtoken"
+      }
+    },
+    {
+      "id": 15,
+      "name": "Mistral-Nemo-Instruct-2407",
+      "category": "Large Language Models (LLM)",
+      "status": "live",
+      "licence": "Apache 2.0",
+      "parameters": "12.2B",
+      "quantization": "fp16",
+      "max_context_size": "118K",
+      "features": ["Function calling"],
+      "pricing": {
+        "input": "0.13€/Mtoken",
+        "output": "0.13€/Mtoken"
+      }
+    },
+    {
+      "id": 16,
+      "name": "bge-m3",
+      "category": "Embeddings",
+      "status": "live",
+      "licence": "MIT",
+      "parameters": "0.567B",
+      "quantization": "fp16",
+      "features": [],
+      "pricing": {
+        "cost": "0.01€/Mtoken"
+      }
+    },
+    {
+      "id": 17,
+      "name": "stable-diffusion-xl-base-v10",
+      "category": "Image Generation",
+      "status": "live",
+      "licence": "OpenRail++",
+      "parameters": "3.5B",
+      "quantization": "fp32",
+      "features": ["Image Generation"],
+      "pricing": {
+        "cost": "Free"
+      }
+    },
+    {
+      "id": 18,
+      "name": "nvr-tts-es-es",
+      "category": "Text To Speech",
+      "status": "live",
+      "licence": "Riva license",
+      "features": ["Text To Speech"],
+      "pricing": {
+        "cost": "Free"
+      }
+    },
+    {
+      "id": 19,
+      "name": "nvr-tts-it-it",
+      "category": "Text To Speech",
+      "status": "live",
+      "licence": "Riva license",
+      "features": ["Text To Speech"],
+      "pricing": {
+        "cost": "Free"
+      }
+    },
+    {
+      "id": 20,
+      "name": "nvr-tts-de-de",
+      "category": "Text To Speech",
+      "status": "live",
+      "licence": "Riva license",
+      "features": ["Text To Speech"],
+      "pricing": {
+        "cost": "Free"
+      }
+    },
+    {
+      "id": 21,
+      "name": "nvr-tts-en-us",
+      "category": "Text To Speech",
+      "status": "live",
+      "licence": "Riva license",
+      "features": ["Text To Speech"],
+      "pricing": {
+        "cost": "Free"
+      }
+    }
+  ],
+  "summary": {
+    "total_models": 21,
+    "categories": {
+      "Visual LLM": 5,
+      "Embeddings": 3,
+      "LLM Guard": 2,
+      "Reasoning LLM": 2,
+      "Speech To Text": 2,
+      "Large Language Models": 2,
+      "Image Generation": 1,
+      "Text To Speech": 4
+    },
+    "statuses": {
+      "new": 3,
+      "beta": 2,
+      "live": 16
+    }
+  }
+}

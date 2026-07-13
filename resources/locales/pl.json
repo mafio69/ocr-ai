@@ -1,0 +1,21 @@
+{
+  "errors": {
+    "file_not_found": "Nie mogę znaleźć tego zdjęcia 📸",
+    "invalid_format": "To nie wygląda na zdjęcie - obsługiwane formaty: {allowed} 📷",
+    "file_too_large": "Zdjęcie ma {size}MB, a maksymalnie mogę przyjąć {max_size}MB 📦",
+    "all_models_failed": "Nawet moje największe neurony się poddały - żaden model nie zadziałał 🧠💔",
+    "google_not_configured": "Google Vision jest włączony, ale brakuje GOOGLE_API_KEY 🔑",
+    "google_api_error": "Google nie odpowiada 🤐",
+    "ovh_api_error": "OVH ma dzisiaj gorszy dzień niż zwykle 📉",
+    "internal_error": "Coś bardzo dziwnego się stało 👽",
+    "unexpected_error": "Spróbuj później (może jutro?) 🤷",
+    "invalid_input": "Nieprawidłowe dane wejściowe"
+  },
+  "messages": {
+    "extraction_started": "Zaczynam wydobywać tekst...",
+    "attempting_model": "Próbuję z modelem: {model}",
+    "model_success": "Model {model} zadziałał!",
+    "model_failed": "Model {model} zawiódł 😞",
+    "extraction_complete": "Tekst wydobyty pomyślnie!"
+  }
+}
