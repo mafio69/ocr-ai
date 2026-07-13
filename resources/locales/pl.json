@@ -3,6 +3,7 @@
     "file_not_found": "Nie mogę znaleźć tego zdjęcia 📸",
     "invalid_format": "To nie wygląda na zdjęcie - obsługiwane formaty: {allowed} 📷",
     "file_too_large": "Zdjęcie ma {size}MB, a maksymalnie mogę przyjąć {max_size}MB 📦",
+    "file_read_error": "Nie udało się odczytać pliku - sprawdź uprawnienia 📂",
     "all_models_failed": "Nawet moje największe neurony się poddały - żaden model nie zadziałał 🧠💔",
     "google_not_configured": "Google Vision jest włączony, ale brakuje GOOGLE_API_KEY 🔑",
     "google_api_error": "Google nie odpowiada 🤐",

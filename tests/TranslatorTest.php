@@ -78,4 +78,11 @@ class TranslatorTest extends TestCase
         $this->assertContains('pl', $locales);
         $this->assertContains('en', $locales);
     }
+
+    public function testFileReadErrorKeyExists(): void
+    {
+        $result = $this->translator->trans('errors.file_read_error');
+        $this->assertNotSame('errors.file_read_error', $result);
+        $this->assertStringContainsString('pliku', $result);
+    }
 }

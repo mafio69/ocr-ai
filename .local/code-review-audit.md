@@ -3,7 +3,7 @@
 **Date:** 2026-07-13  
 **Project:** OVH OCR (PHP library for Visual LLM OCR)  
 **Reviewer:** opencode  
-**Tests Status:** 36 passed, 0 deprecations (after fixes)
+**Tests Status:** 40 passed, 0 deprecations (after fixes)
 
 ---
 
@@ -43,6 +43,20 @@
 
 ---
 
+### ✅ #3 `file_get_contents()` can return `false` - FIXED
+**Location:** `src/OcrClient.php:193, 258`
+
+**Changes made:**
+- Added error checking for `file_get_contents()` in both `tryOvhModel()` and `tryGoogleVision()`
+- Throws `OcrException` with `errors.file_read_error` key when file cannot be read
+- Added new i18n keys to both `pl.json` and `en.json`:
+  - PL: "Nie udało się odczytać pliku - sprawdź uprawnienia 📂"
+  - EN: "Failed to read file - check permissions 📂"
+- Added comprehensive tests in `FileReadErrorTest.php` (3 new tests)
+- Prevents race condition between file validation and file reading
+
+---
+
 ## Critical Issues (4)
 
 ### 1. ~~Security: MIME type detection based on file extension~~ - FIXED
@@ -56,6 +70,13 @@
 **Location:** `src/OcrClient.php:261`
 
 **Status:** ✅ FIXED - API key now passed via `x-goog-api-key` header instead of query string.
+
+---
+
+### 3. ~~`file_get_contents()` can return `false`~~ - FIXED
+**Location:** `src/OcrClient.php:193, 258`
+
+**Status:** ✅ FIXED - Added error checking with proper exception handling and i18n support.
 
 ---
 
@@ -338,11 +359,11 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 
 | Severity | Count | Fixed | Remaining |
 |----------|-------|-------|-----------|
-| Critical | 4 | 2 | 2 |
+| Critical | 4 | 3 | 1 |
 | High | 6 | 0 | 6 |
 | Medium | 8 | 0 | 8 |
 | Low | 7 | 0 | 7 |
-| **Total** | **25** | **2** | **23** |
+| **Total** | **25** | **3** | **22** |
 
 ---
 

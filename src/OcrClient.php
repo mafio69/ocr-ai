@@ -190,7 +190,16 @@ class OcrClient
     private function tryOvhModel(string $imagePath, string $modelName, string $language): array
     {
         $mimeType = $this->detectMimeType($imagePath);
-        $base64 = base64_encode(file_get_contents($imagePath));
+        $content = file_get_contents($imagePath);
+        if ($content === false) {
+            throw new OcrException(
+                message: "Failed to read file: {$imagePath}",
+                userMessageKey: 'errors.file_read_error',
+                context: ['file' => $imagePath],
+                code: 500
+            );
+        }
+        $base64 = base64_encode($content);
         $dataUrl = "data:{$mimeType};base64,{$base64}";
         $prompt = $this->buildOcrPrompt($language);
 
@@ -255,7 +264,16 @@ class OcrClient
      */
     private function tryGoogleVision(string $imagePath): array
     {
-        $base64 = base64_encode(file_get_contents($imagePath));
+        $content = file_get_contents($imagePath);
+        if ($content === false) {
+            throw new OcrException(
+                message: "Failed to read file: {$imagePath}",
+                userMessageKey: 'errors.file_read_error',
+                context: ['file' => $imagePath],
+                code: 500
+            );
+        }
+        $base64 = base64_encode($content);
 
         try {
             $response = $this->httpClient->post(self::GOOGLE_VISION_ENDPOINT, [
