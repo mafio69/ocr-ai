@@ -18,7 +18,7 @@ class OcrException extends Exception
         array $context = [],
         array $userMessageParams = [],
         int $code = 0,
-        Exception $previous = null
+        ?\Throwable $previous = null
     ) {
         parent::__construct($message, $code, $previous);
 

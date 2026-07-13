@@ -356,14 +356,70 @@ PROMPT;
 
     private function detectMimeType(string $imagePath): string
     {
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($imagePath);
+        
+        if ($mimeType === false) {
+            $this->logger->warning('finfo failed to detect MIME type, falling back to extension', [
+                'file' => basename($imagePath)
+            ]);
+            return $this->detectMimeTypeByExtension($imagePath);
+        }
+        
+        $allowedMimeTypes = [
+            'image/jpeg' => ['jpg', 'jpeg'],
+            'image/png' => ['png'],
+            'image/webp' => ['webp'],
+            'image/gif' => ['gif'],
+        ];
+        
+        if (!isset($allowedMimeTypes[$mimeType])) {
+            throw new OcrException(
+                message: "Detected MIME type not allowed: {$mimeType}",
+                userMessageKey: 'errors.invalid_format',
+                context: [
+                    'detected_mime' => $mimeType,
+                    'allowed_mimes' => array_keys($allowedMimeTypes),
+                    'file' => basename($imagePath),
+                ],
+                code: 400
+            );
+        }
+        
         $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
-
+        $expectedExtensions = $allowedMimeTypes[$mimeType];
+        
+        if (!in_array($ext, $expectedExtensions, true)) {
+            throw new OcrException(
+                message: "File extension '{$ext}' does not match detected MIME type '{$mimeType}'",
+                userMessageKey: 'errors.invalid_format',
+                context: [
+                    'extension' => $ext,
+                    'mime_type' => $mimeType,
+                    'expected_extensions' => $expectedExtensions,
+                ],
+                code: 400
+            );
+        }
+        
+        return $mimeType;
+    }
+    
+    private function detectMimeTypeByExtension(string $imagePath): string
+    {
+        $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
+        
         return match ($ext) {
             'jpg', 'jpeg' => 'image/jpeg',
             'png' => 'image/png',
             'webp' => 'image/webp',
             'gif' => 'image/gif',
-            default => 'image/jpeg',
+            default => throw new OcrException(
+                message: "Cannot detect MIME type for extension: {$ext}",
+                userMessageKey: 'errors.invalid_format',
+                context: ['extension' => $ext],
+                code: 400
+            ),
         };
     }
 
