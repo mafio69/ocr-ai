@@ -33,12 +33,29 @@
 
 ---
 
+### ✅ #2 Security: Google API key in URL query string - FIXED
+**Location:** `src/OcrClient.php:261`
+
+**Changes made:**
+- Moved Google API key from query string parameter to `x-goog-api-key` header
+- Prevents API key from appearing in access logs, proxy logs, and Guzzle history
+- Changed from `'query' => ['key' => $this->googleApiKey]` to `'headers' => ['x-goog-api-key' => $this->googleApiKey]`
+
+---
+
 ## Critical Issues (4)
 
 ### 1. ~~Security: MIME type detection based on file extension~~ - FIXED
 **Location:** `src/OcrClient.php:357-413`
 
 **Status:** ✅ FIXED - Now uses `finfo_file()` with MIME type validation and extension cross-check.
+
+---
+
+### 2. ~~Security: Google API key in URL query string~~ - FIXED
+**Location:** `src/OcrClient.php:261`
+
+**Status:** ✅ FIXED - API key now passed via `x-goog-api-key` header instead of query string.
 
 ---
 
@@ -321,18 +338,18 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 
 | Severity | Count | Fixed | Remaining |
 |----------|-------|-------|-----------|
-| Critical | 4 | 1 | 3 |
+| Critical | 4 | 2 | 2 |
 | High | 6 | 0 | 6 |
 | Medium | 8 | 0 | 8 |
 | Low | 7 | 0 | 7 |
-| **Total** | **25** | **1** | **24** |
+| **Total** | **25** | **2** | **23** |
 
 ---
 
 ## Top 3 Recommendations
 
 1. ~~**Fix MIME type detection** - Use `finfo_file()` instead of extension-based detection~~ ✅ DONE
-2. **Move API keys to headers** - Never put secrets in URLs
+2. ~~**Move API keys to headers** - Never put secrets in URLs~~ ✅ DONE
 3. **Make HTTP client injectable** - Enables proper testing and flexibility
 
 ---

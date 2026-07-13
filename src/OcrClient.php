@@ -259,7 +259,7 @@ class OcrClient
 
         try {
             $response = $this->httpClient->post(self::GOOGLE_VISION_ENDPOINT, [
-                'query' => ['key' => $this->googleApiKey],
+                'headers' => ['x-goog-api-key' => $this->googleApiKey],
                 'json' => [
                     'requests' => [
                         [
