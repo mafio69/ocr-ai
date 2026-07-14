@@ -204,4 +204,93 @@ class MimeTypeDetectionTest extends TestCase
         
         $this->assertSame('image/jpeg', $mimeType);
     }
+
+    private function callDetectMimeTypeByExtension(OcrClient $client, string $imagePath): string
+    {
+        $reflection = new ReflectionClass($client);
+        $method = $reflection->getMethod('detectMimeTypeByExtension');
+        
+        return $method->invoke($client, $imagePath);
+    }
+
+    public function testFallbackDetectsJpegByExtension(): void
+    {
+        $imagePath = $this->tempDir . '/test.jpg';
+        file_put_contents($imagePath, 'fake content');
+        
+        $client = $this->createClient();
+        $mimeType = $this->callDetectMimeTypeByExtension($client, $imagePath);
+        
+        $this->assertSame('image/jpeg', $mimeType);
+    }
+
+    public function testFallbackDetectsPngByExtension(): void
+    {
+        $imagePath = $this->tempDir . '/test.png';
+        file_put_contents($imagePath, 'fake content');
+        
+        $client = $this->createClient();
+        $mimeType = $this->callDetectMimeTypeByExtension($client, $imagePath);
+        
+        $this->assertSame('image/png', $mimeType);
+    }
+
+    public function testFallbackDetectsWebpByExtension(): void
+    {
+        $imagePath = $this->tempDir . '/test.webp';
+        file_put_contents($imagePath, 'fake content');
+        
+        $client = $this->createClient();
+        $mimeType = $this->callDetectMimeTypeByExtension($client, $imagePath);
+        
+        $this->assertSame('image/webp', $mimeType);
+    }
+
+    public function testFallbackDetectsGifByExtension(): void
+    {
+        $imagePath = $this->tempDir . '/test.gif';
+        file_put_contents($imagePath, 'fake content');
+        
+        $client = $this->createClient();
+        $mimeType = $this->callDetectMimeTypeByExtension($client, $imagePath);
+        
+        $this->assertSame('image/gif', $mimeType);
+    }
+
+    public function testFallbackRejectsUnsupportedExtension(): void
+    {
+        $imagePath = $this->tempDir . '/test.bmp';
+        file_put_contents($imagePath, 'fake content');
+        
+        $client = $this->createClient();
+        
+        $this->expectException(OcrException::class);
+        $this->expectExceptionCode(400);
+        
+        $this->callDetectMimeTypeByExtension($client, $imagePath);
+    }
+
+    public function testFallbackRejectsUnknownExtension(): void
+    {
+        $imagePath = $this->tempDir . '/test.xyz';
+        file_put_contents($imagePath, 'fake content');
+        
+        $client = $this->createClient();
+        
+        $this->expectException(OcrException::class);
+        $this->expectExceptionCode(400);
+        
+        $this->callDetectMimeTypeByExtension($client, $imagePath);
+    }
+
+    public function testFallbackHandlesJpegExtension(): void
+    {
+        $imagePath = $this->tempDir . '/test.jpeg';
+        file_put_contents($imagePath, 'fake content');
+        
+        $client = $this->createClient();
+        $mimeType = $this->callDetectMimeTypeByExtension($client, $imagePath);
+        
+        $this->assertSame('image/jpeg', $mimeType);
+    }
 }

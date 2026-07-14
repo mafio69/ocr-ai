@@ -62,4 +62,44 @@ class OcrExceptionTest extends TestCase
         $msg = $e->getUserMessage($this->translator);
         $this->assertStringContainsString('poszło nie tak', $msg);
     }
+
+    public function testGetUserMessageWithNullTranslator(): void
+    {
+        $e = new OcrException('msg', 'errors.file_not_found');
+        $msg = $e->getUserMessage(null);
+        $this->assertSame('errors.file_not_found', $msg);
+    }
+
+    public function testGetUserMessageWithoutParamReturnsKey(): void
+    {
+        $e = new OcrException('msg', 'errors.file_not_found');
+        $msg = $e->getUserMessage();
+        $this->assertSame('errors.file_not_found', $msg);
+    }
+
+    public function testGetUserMessageWithoutKeyReturnsFallback(): void
+    {
+        $e = new OcrException('msg');
+        $msg = $e->getUserMessage(null);
+        $this->assertStringContainsString('poszło nie tak', $msg);
+    }
+
+    public function testGetUserMessageWithoutKeyAndWithoutTranslatorReturnsFallback(): void
+    {
+        $e = new OcrException('msg');
+        $msg = $e->getUserMessage();
+        $this->assertStringContainsString('poszło nie tak', $msg);
+    }
+
+    public function testGetUserMessageKeyReturnsKey(): void
+    {
+        $e = new OcrException('msg', 'errors.file_not_found');
+        $this->assertSame('errors.file_not_found', $e->getUserMessageKey());
+    }
+
+    public function testGetUserMessageKeyReturnsNullWhenNoKey(): void
+    {
+        $e = new OcrException('msg');
+        $this->assertNull($e->getUserMessageKey());
+    }
 }

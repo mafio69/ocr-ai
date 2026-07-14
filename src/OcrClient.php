@@ -42,6 +42,7 @@ class OcrClient
      * @param array $modelPriority Kolejność prób: np. ['medium', 'premium', 'lite']
      * @param bool $googleEnabled Czy włączyć fallback do Google Vision
      * @param string|null $googleApiKey Klucz Google (wymagany jeśli googleEnabled)
+     * @param Client|null $httpClient Opcjonalny klient HTTP (do testów)
      */
     public function __construct(
         string $apiKey,
@@ -51,7 +52,8 @@ class OcrClient
         array $modelMap = [],
         array $modelPriority = ['medium', 'premium', 'lite'],
         bool $googleEnabled = false,
-        ?string $googleApiKey = null
+        ?string $googleApiKey = null,
+        ?Client $httpClient = null
     ) {
         if (trim($apiKey) === '') {
             throw new \InvalidArgumentException(
@@ -83,7 +85,7 @@ class OcrClient
             $this->modelStrategy = array_values($modelPriority);
         }
 
-        $this->httpClient = new Client([
+        $this->httpClient = $httpClient ?? new Client([
             'timeout' => 60,
             'connect_timeout' => 10,
         ]);
