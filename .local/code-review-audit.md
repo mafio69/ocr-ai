@@ -3,7 +3,7 @@
 **Date:** 2026-07-13  
 **Project:** OVH OCR (PHP library for Visual LLM OCR)  
 **Reviewer:** opencode  
-**Tests Status:** 41 passed, 0 deprecations (after fixes)
+**Tests Status:** 80 passed, 0 deprecations (after fixes)
 
 ---
 
@@ -155,27 +155,10 @@ Global state means creating a second `OcrClient` with a different translator sil
 
 ## High Priority Issues (6)
 
-### 5. HTTP client is not injectable
-**Location:** `src/OcrClient.php:90-93`
+### 5. ~~HTTP client is not injectable~~ - FIXED
+**Location:** `src/OcrClient.php:86-89`
 
-`new Client(...)` in the constructor makes it impossible to mock HTTP in integration tests.
-
-**Recommendation:** Accept `Client` as an optional constructor parameter:
-```php
-public function __construct(
-    string $apiKey,
-    Logger $logger,
-    Translator $translator,
-    string $apiEndpoint = self::OVH_DEFAULT_ENDPOINT,
-    array $modelMap = [],
-    array $modelPriority = ['medium', 'premium', 'lite'],
-    bool $googleEnabled = false,
-    ?string $googleApiKey = null,
-    ?Client $httpClient = null
-) {
-    $this->httpClient = $httpClient ?? new Client([...]);
-}
-```
+**Status:** ✅ FIXED - Added `?Client $httpClient = null` parameter to constructor. Uses null coalescing operator to create default client if not provided. Added comprehensive tests in `HttpClientInjectionTest.php` (5 tests, 13 assertions).
 
 ---
 
@@ -396,10 +379,10 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 | Severity | Count | Fixed | Remaining |
 |----------|-------|-------|-----------|
 | Critical | 4 | 4 | 0 |
-| High | 6 | 0 | 6 |
+| High | 6 | 1 | 5 |
 | Medium | 8 | 0 | 8 |
 | Low | 7 | 0 | 7 |
-| **Total** | **25** | **4** | **21** |
+| **Total** | **25** | **5** | **20** |
 
 ---
 
@@ -407,7 +390,7 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 
 1. ~~**Fix MIME type detection** - Use `finfo_file()` instead of extension-based detection~~ ✅ DONE
 2. ~~**Move API keys to headers** - Never put secrets in URLs~~ ✅ DONE
-3. **Make HTTP client injectable** - Enables proper testing and flexibility
+3. ~~**Make HTTP client injectable** - Enables proper testing and flexibility~~ ✅ DONE
 
 ---
 
@@ -417,16 +400,17 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 - ✅ #2 Google API key w headerze
 - ✅ #3 file_get_contents() error handling
 - ✅ #4 OcrException static translator
+- ✅ #5 HTTP client injectable
 - ✅ #18 OcrClient constructor side-effect (powiązany z #4)
 
 ---
 
 ## Architectural Concerns
 
-- **Static state in `OcrException`** - Will cause bugs in multi-client scenarios
-- **Hardcoded messages in Polish** - Defeats the i18n system
+- **Hardcoded messages in Polish** - Defeats the i18n system (partially fixed in ErrorHandler)
 - **No interfaces** - Makes testing and mocking difficult
-- **Constructor side effects** - Violates single responsibility principle
+- ~~**Static state in `OcrException`**~~ - ✅ FIXED
+- ~~**Constructor side effects**~~ - ✅ FIXED
 
 ---
 
@@ -435,11 +419,13 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 - Good use of modern PHP 8.1+ features (match expressions, named arguments, nullsafe operator)
 - Comprehensive i18n system with fallback
 - Well-structured error handling with user-facing and technical messages
-- Good test coverage for core components (36 tests, 49 assertions)
+- Excellent test coverage (80 tests, 151 assertions)
 - Clean separation of concerns (Client, Response, Exception, Logger, Translator)
 - Proper use of PSR-4 autoloading
 - Proper use of `finfo` for secure MIME type detection
 - Comprehensive security tests for MIME type validation
+- Injectable HTTP client enables integration testing
+- No static state - supports multiple client instances
 
 ---
 
