@@ -69,7 +69,7 @@ class ErrorResponse
     public function getHttpStatusCode(): int
     {
         return match ($this->code) {
-            'GOOGLE_API_ERROR' => 402,
+            'GOOGLE_API_ERROR' => 502,
             'OCR_ERROR' => 422,
             'FILE_NOT_FOUND' => 404,
             'UNAUTHORIZED' => 401,

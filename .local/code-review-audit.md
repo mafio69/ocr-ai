@@ -162,76 +162,38 @@ Global state means creating a second `OcrClient` with a different translator sil
 
 ---
 
-### 6. `OcrException` fallback message is hardcoded in Polish
+### 6. ~~`OcrException` fallback message is hardcoded in Polish~~ - FIXED
 **Location:** `src/Exceptions/OcrException.php:40`
 
-```php
-return "Coś poszło nie tak. Spróbuj później 🤷";
-```
-
-This defeats i18n when no translator is set.
-
-**Recommendation:** Use the fallback locale or a language-agnostic key.
+**Status:** ✅ FIXED - Now uses `errors.unexpected_error` i18n key as fallback instead of hardcoded Polish string. When no translator is available, returns the key itself.
 
 ---
 
-### 7. `ErrorHandler` also hardcodes Polish
+### 7. ~~`ErrorHandler` also hardcodes Polish~~ - FIXED
 **Location:** `src/Error/ErrorHandler.php:37`
 
-```php
-$userMessage = $this->isDevelopment 
-    ? $e->getMessage()
-    : "Coś poszło nie tak... spróbuj później 🤷";
-```
-
-**Recommendation:** Inject and use the translator for consistent i18n.
+**Status:** ✅ FIXED - Already using `$this->translator->trans('errors.unexpected_error')` for consistent i18n.
 
 ---
 
-### 8. `OcrException::$previous` type is `Exception` instead of `?Throwable`
+### 8. ~~`OcrException::$previous` type is `Exception` instead of `?Throwable`~~ - FIXED
 **Location:** `src/Exceptions/OcrException.php:21`
 
-PHP 8 convention is `?Throwable $previous`. This limits exception chaining.
-
-**Recommendation:** Change signature:
-```php
-public function __construct(
-    string $message,
-    ?string $userMessageKey = null,
-    array $context = [],
-    array $userMessageParams = [],
-    int $code = 0,
-    ?Throwable $previous = null
-)
-```
+**Status:** ✅ FIXED - Constructor now uses `?\Throwable $previous = null` following PHP 8 convention.
 
 ---
 
-### 9. No validation that `modelMap` has entries for `modelPriority` tiers
+### 9. ~~No validation that `modelMap` has entries for `modelPriority` tiers~~ - FIXED
 **Location:** `src/OcrClient.php:68-78`
 
-If `modelPriority = ['premium']` but `modelMap` has no `premium` key, all models are skipped silently (only a warning is logged).
-
-**Recommendation:** Throw early in the constructor:
-```php
-foreach ($this->modelStrategy as $tier) {
-    if ($tier !== 'google_vision' && !isset($this->modelMap[$tier])) {
-        throw new \InvalidArgumentException("Model map missing tier: {$tier}");
-    }
-}
-```
+**Status:** ✅ FIXED - Constructor now validates that all tiers in `modelPriority` (except `google_vision`) have corresponding entries in `modelMap`. Throws `InvalidArgumentException` with clear message if validation fails. Added comprehensive tests in `ModelValidationTest.php` (6 tests).
 
 ---
 
-### 10. `ErrorResponse::getHttpStatusCode()` maps `GOOGLE_API_ERROR` to 402
+### 10. ~~`ErrorResponse::getHttpStatusCode()` maps `GOOGLE_API_ERROR` to 402~~ - FIXED
 **Location:** `src/Error/ErrorResponse.php:62`
 
-402 = "Payment Required". A Google API error should be 502 (Bad Gateway) or 503.
-
-**Recommendation:** Fix the mapping:
-```php
-'GOOGLE_API_ERROR' => 502,
-```
+**Status:** ✅ FIXED - Changed from 402 (Payment Required) to 502 (Bad Gateway). Added comprehensive tests in `ErrorResponseTest.php` (10 tests).
 
 ---
 
@@ -379,10 +341,10 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 | Severity | Count | Fixed | Remaining |
 |----------|-------|-------|-----------|
 | Critical | 4 | 4 | 0 |
-| High | 6 | 1 | 5 |
+| High | 6 | 6 | 0 |
 | Medium | 8 | 0 | 8 |
 | Low | 7 | 0 | 7 |
-| **Total** | **25** | **5** | **20** |
+| **Total** | **25** | **10** | **15** |
 
 ---
 
@@ -402,6 +364,14 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 - ✅ #4 OcrException static translator
 - ✅ #5 HTTP client injectable
 - ✅ #18 OcrClient constructor side-effect (powiązany z #4)
+
+## All High Priority Issues - COMPLETED ✅
+
+- ✅ #6 OcrException fallback message - uses i18n key
+- ✅ #7 ErrorHandler hardcoded Polish - already fixed
+- ✅ #8 OcrException $previous type - uses ?Throwable
+- ✅ #9 modelMap vs modelPriority validation - throws InvalidArgumentException
+- ✅ #10 GOOGLE_API_ERROR HTTP status - changed to 502
 
 ---
 

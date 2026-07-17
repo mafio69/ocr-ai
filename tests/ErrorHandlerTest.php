@@ -150,7 +150,7 @@ class ErrorHandlerTest extends TestCase
         
         $response = $handler->handle($exception);
         
-        $this->assertSame('OCR_ERROR', $response->getDebugInfo()['code']);
+        $this->assertSame('FILE_NOT_FOUND', $response->getDebugInfo()['code']);
     }
 
     public function testHandleGenericExceptionReturnsInternalErrorCode(): void

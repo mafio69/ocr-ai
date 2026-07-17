@@ -2,10 +2,9 @@
 
 namespace OvhOcr\Exceptions;
 
-use Exception;
 use OvhOcr\i18n\Translator;
 
-class OcrException extends Exception
+class OcrException extends \Exception
 {
     private array $context = [];
     private ?string $userMessageKey = null;
@@ -36,15 +35,29 @@ class OcrException extends Exception
      */
     public function getUserMessage(?Translator $translator = null): string
     {
-        if (!$this->userMessageKey) {
-            return "Coś poszło nie tak. Spróbuj później 🤷";
-        }
+        $key = $this->userMessageKey ?? 'errors.unexpected_error';
 
         if (!$translator) {
-            return $this->userMessageKey;
+            return $this->getFallbackMessage($key);
         }
 
-        return $translator->trans($this->userMessageKey, $this->userMessageParams);
+        return $translator->trans($key, $this->userMessageParams);
+    }
+
+    private function getFallbackMessage(string $key): string
+    {
+        return match ($key) {
+            'errors.file_not_found' => 'Image file not found',
+            'errors.invalid_format' => 'Invalid image format',
+            'errors.file_too_large' => 'File too large',
+            'errors.file_read_error' => 'Failed to read file',
+            'errors.all_models_failed' => 'All OCR models failed',
+            'errors.google_not_configured' => 'Google Vision not configured',
+            'errors.google_api_error' => 'Google API error',
+            'errors.ovh_api_error' => 'OVH API error',
+            'errors.internal_error' => 'Internal error',
+            default => 'An unexpected error occurred',
+        };
     }
 
     public function getUserMessageKey(): ?string

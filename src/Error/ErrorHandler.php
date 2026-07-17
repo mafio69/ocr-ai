@@ -36,13 +36,26 @@ class ErrorHandler
 
     private function handleOcrException(OcrException $e): ErrorResponse
     {
+        $errorCode = $this->mapUserMessageKeyToErrorCode($e->getUserMessageKey());
+
         return new ErrorResponse(
             userMessage: $e->getUserMessage($this->translator),
             internalMessage: $e->getMessage(),
             context: $e->getContext(),
-            code: 'OCR_ERROR',
+            code: $errorCode,
             isDevelopment: $this->isDevelopment
         );
+    }
+
+    private function mapUserMessageKeyToErrorCode(?string $userMessageKey): string
+    {
+        return match ($userMessageKey) {
+            'errors.google_api_error' => 'GOOGLE_API_ERROR',
+            'errors.google_not_configured' => 'GOOGLE_API_ERROR',
+            'errors.file_not_found' => 'FILE_NOT_FOUND',
+            'errors.unauthorized' => 'UNAUTHORIZED',
+            default => 'OCR_ERROR',
+        };
     }
 
     private function handleGenericException(Throwable $e): ErrorResponse

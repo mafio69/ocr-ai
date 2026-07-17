@@ -75,6 +75,8 @@ class OcrClient
         $this->googleApiKey = $googleApiKey;
         $this->modelMap = $modelMap;
 
+        $this->validateModelConfiguration($modelMap, $modelPriority, $googleEnabled);
+
         // Jeśli Google wyłączony - usuń z listy prób
         if (!$this->googleEnabled) {
             $this->modelStrategy = array_values(array_filter(
@@ -95,6 +97,33 @@ class OcrClient
             'strategy' => $this->modelStrategy,
             'google_enabled' => $googleEnabled,
         ]);
+    }
+
+    private function validateModelConfiguration(array $modelMap, array $modelPriority, bool $googleEnabled): void
+    {
+        $knownTiers = ['lite', 'medium', 'premium', 'google_vision'];
+
+        if (empty($modelPriority)) {
+            return;
+        }
+
+        foreach ($modelPriority as $tier) {
+            if (!in_array($tier, $knownTiers, true)) {
+                throw new \InvalidArgumentException("Unknown tier in model priority: {$tier}");
+            }
+        }
+
+        $filteredPriority = array_filter($modelPriority, fn($t) => $t !== 'google_vision');
+
+        foreach ($filteredPriority as $tier) {
+            if (!isset($modelMap[$tier])) {
+                throw new \InvalidArgumentException("Model map missing tier: {$tier}");
+            }
+        }
+
+        if ($googleEnabled && !in_array('google_vision', $modelPriority, true)) {
+            $this->logger->warning('Google Vision is enabled but not in model priority');
+        }
     }
 
     /**
