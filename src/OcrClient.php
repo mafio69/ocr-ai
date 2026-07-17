@@ -22,6 +22,8 @@ class OcrClient
     private const GOOGLE_VISION_ENDPOINT = 'https://vision.googleapis.com/v1/images:annotate';
     private const MAX_FILE_SIZE_MB = 20;
     private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    private const DEFAULT_TEMPERATURE = 0.1;
+    private const DEFAULT_MAX_TOKENS = 8192;
 
     private Client $httpClient;
     private string $apiKey;
@@ -32,6 +34,8 @@ class OcrClient
     private ?string $googleApiKey;
     private array $modelMap;
     private array $modelStrategy;
+    private float $temperature;
+    private int $maxTokens;
 
     /**
      * @param string $apiKey Token OVH AI Endpoints
@@ -43,6 +47,8 @@ class OcrClient
      * @param bool $googleEnabled Czy włączyć fallback do Google Vision
      * @param string|null $googleApiKey Klucz Google (wymagany jeśli googleEnabled)
      * @param Client|null $httpClient Opcjonalny klient HTTP (do testów)
+     * @param float $temperature OVH model temperature (0.0-2.0), lower = more deterministic
+     * @param int $maxTokens Max tokens for the OVH model response
      */
     public function __construct(
         string $apiKey,
@@ -53,7 +59,9 @@ class OcrClient
         array $modelPriority = ['medium', 'premium', 'lite'],
         bool $googleEnabled = false,
         ?string $googleApiKey = null,
-        ?Client $httpClient = null
+        ?Client $httpClient = null,
+        float $temperature = self::DEFAULT_TEMPERATURE,
+        int $maxTokens = self::DEFAULT_MAX_TOKENS
     ) {
         if (trim($apiKey) === '') {
             throw new \InvalidArgumentException(
@@ -67,6 +75,14 @@ class OcrClient
             );
         }
 
+        if ($temperature < 0.0 || $temperature > 2.0) {
+            throw new \InvalidArgumentException("Temperature must be between 0.0 and 2.0, got: {$temperature}");
+        }
+
+        if ($maxTokens < 1) {
+            throw new \InvalidArgumentException("maxTokens must be a positive integer, got: {$maxTokens}");
+        }
+
         $this->apiKey = $apiKey;
         $this->apiEndpoint = $apiEndpoint;
         $this->logger = $logger;
@@ -74,6 +90,8 @@ class OcrClient
         $this->googleEnabled = $googleEnabled;
         $this->googleApiKey = $googleApiKey;
         $this->modelMap = $modelMap;
+        $this->temperature = $temperature;
+        $this->maxTokens = $maxTokens;
 
         $this->validateModelConfiguration($modelMap, $modelPriority, $googleEnabled);
 
@@ -250,8 +268,8 @@ class OcrClient
                             ],
                         ],
                     ],
-                    'temperature' => 0.1,
-                    'max_tokens' => 8192,
+                    'temperature' => $this->temperature,
+                    'max_tokens' => $this->maxTokens,
                 ],
             ]);
 

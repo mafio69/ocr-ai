@@ -73,7 +73,12 @@ class OcrResponse
      */
     public function getLines(): array
     {
-        return array_filter(explode("\n", $this->extractedText));
+        // Filter only on an exactly empty string - array_filter() without a callback
+        // would also drop lines like "0", which can be real document content, not a blank line.
+        return array_filter(
+            explode("\n", $this->extractedText),
+            static fn (string $line): bool => $line !== ''
+        );
     }
 
     /**

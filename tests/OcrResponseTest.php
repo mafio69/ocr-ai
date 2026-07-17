@@ -42,6 +42,22 @@ class OcrResponseTest extends TestCase
         $this->assertCount(3, $response->getLines());
     }
 
+    public function testGetLinesKeepsLineContainingOnlyZero(): void
+    {
+        // array_filter() without an explicit callback treats the string "0" as falsy and
+        // drops it - but it can be real document content (e.g. a sequence number), not a blank line.
+        $data = ['choices' => [['message' => ['content' => "Linia 1\n0\nLinia 3"]]]];
+        $response = new OcrResponse($data);
+        $this->assertSame(['Linia 1', '0', 'Linia 3'], array_values($response->getLines()));
+    }
+
+    public function testGetLinesRemovesOnlyExactlyEmptyLines(): void
+    {
+        $data = ['choices' => [['message' => ['content' => "Linia 1\n\nLinia 3"]]]];
+        $response = new OcrResponse($data);
+        $this->assertSame(['Linia 1', 'Linia 3'], array_values($response->getLines()));
+    }
+
     public function testGetParagraphs(): void
     {
         $data = ['choices' => [['message' => ['content' => "Akapit 1\ntekst\n\nAkapit 2"]]]];

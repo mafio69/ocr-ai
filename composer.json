@@ -12,6 +12,7 @@
   "require": {
     "php": "^8.1",
     "guzzlehttp/guzzle": "^7.5",
+    "psr/log": "^3.0",
     "ext-json": "*",
     "ext-mbstring": "*",
     "ext-fileinfo": "*"
@@ -34,8 +35,18 @@
     }
   },
   "scripts": {
-    "test": "phpunit --colors=always",
+    "test": [
+      "@check:asserts",
+      "@test:phpunit"
+    ],
+    "check:asserts": "bash scripts/check-trivial-asserts.sh tests",
+    "test:phpunit": "phpunit --colors=always",
     "test-coverage": "phpunit --coverage-text"
+  },
+  "scripts-descriptions": {
+    "test": "All tests: trivial-assertion gate + PHPUnit",
+    "check:asserts": "Scans tests/ for trivial assertions (blocks if found)",
+    "test:phpunit": "PHPUnit only"
   },
   "keywords": [
     "ocr",

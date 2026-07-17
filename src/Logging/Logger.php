@@ -2,7 +2,17 @@
 
 namespace OvhOcr\Logging;
 
-class Logger
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
+use Stringable;
+
+/**
+ * Simple file-based logger. Implements Psr\Log\LoggerInterface so it can be
+ * used anywhere a standard PSR-3 logger is expected (e.g. third-party
+ * libraries) - and so it can be swapped for Monolog (or vice versa) in the
+ * future without changing calling code.
+ */
+class Logger implements LoggerInterface
 {
     private string $logFile;
     private bool $enabled;
@@ -11,36 +21,68 @@ class Logger
     {
         $this->logFile = $logFile;
         $this->enabled = $enabled;
-        
+
         $this->ensureLogDirectory();
     }
 
-    public function error(string $message, array $context = []): void
+    public function emergency(string|Stringable $message, array $context = []): void
     {
-        $this->log('ERROR', $message, $context);
+        $this->log(LogLevel::EMERGENCY, $message, $context);
     }
 
-    public function warning(string $message, array $context = []): void
+    public function alert(string|Stringable $message, array $context = []): void
     {
-        $this->log('WARNING', $message, $context);
+        $this->log(LogLevel::ALERT, $message, $context);
     }
 
-    public function info(string $message, array $context = []): void
+    public function critical(string|Stringable $message, array $context = []): void
     {
-        $this->log('INFO', $message, $context);
+        $this->log(LogLevel::CRITICAL, $message, $context);
     }
 
-    public function success(string $message, array $context = []): void
+    public function error(string|Stringable $message, array $context = []): void
     {
-        $this->log('SUCCESS', $message, $context);
+        $this->log(LogLevel::ERROR, $message, $context);
     }
 
-    public function debug(string $message, array $context = []): void
+    public function warning(string|Stringable $message, array $context = []): void
     {
-        $this->log('DEBUG', $message, $context);
+        $this->log(LogLevel::WARNING, $message, $context);
     }
 
-    private function log(string $level, string $message, array $context = []): void
+    public function notice(string|Stringable $message, array $context = []): void
+    {
+        $this->log(LogLevel::NOTICE, $message, $context);
+    }
+
+    public function info(string|Stringable $message, array $context = []): void
+    {
+        $this->log(LogLevel::INFO, $message, $context);
+    }
+
+    public function debug(string|Stringable $message, array $context = []): void
+    {
+        $this->log(LogLevel::DEBUG, $message, $context);
+    }
+
+    /**
+     * A level outside PSR-3, kept for backward compatibility with existing
+     * usage in OcrClient (e.g. "model X succeeded"). Not part of LoggerInterface.
+     */
+    public function success(string|Stringable $message, array $context = []): void
+    {
+        $this->writeLine('SUCCESS', (string) $message, $context);
+    }
+
+    /**
+     * @param mixed $level Psr\Log\LogLevel::* or any level string
+     */
+    public function log($level, string|Stringable $message, array $context = []): void
+    {
+        $this->writeLine(strtoupper((string) $level), (string) $message, $context);
+    }
+
+    private function writeLine(string $level, string $message, array $context = []): void
     {
         if (!$this->enabled) {
             return;
@@ -48,7 +90,7 @@ class Logger
 
         $timestamp = date('Y-m-d H:i:s');
         $contextJson = !empty($context) ? json_encode($context, JSON_UNESCAPED_UNICODE) : '';
-        
+
         $logLine = "[{$timestamp}] [{$level}] {$message}";
         if ($contextJson) {
             $logLine .= " | {$contextJson}";

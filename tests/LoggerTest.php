@@ -4,6 +4,7 @@ namespace OvhOcr\Tests;
 
 use PHPUnit\Framework\TestCase;
 use OvhOcr\Logging\Logger;
+use Psr\Log\LoggerInterface;
 
 class LoggerTest extends TestCase
 {
@@ -62,5 +63,64 @@ class LoggerTest extends TestCase
         unlink($nestedFile);
         rmdir(dirname($nestedFile));
         rmdir(dirname(dirname($nestedFile)));
+    }
+
+    // --- Audit #13: PSR-3 (Psr\Log\LoggerInterface) ---
+
+    public function testImplementsPsr3LoggerInterface(): void
+    {
+        $logger = new Logger($this->logFile, true);
+        $this->assertInstanceOf(LoggerInterface::class, $logger);
+    }
+
+    public function testEmergencyWritesEmergencyLevel(): void
+    {
+        $logger = new Logger($this->logFile, true);
+        $logger->emergency('krytycznie');
+        $content = file_get_contents($this->logFile);
+        $this->assertStringContainsString('[EMERGENCY]', $content);
+    }
+
+    public function testAlertWritesAlertLevel(): void
+    {
+        $logger = new Logger($this->logFile, true);
+        $logger->alert('uwaga');
+        $content = file_get_contents($this->logFile);
+        $this->assertStringContainsString('[ALERT]', $content);
+    }
+
+    public function testCriticalWritesCriticalLevel(): void
+    {
+        $logger = new Logger($this->logFile, true);
+        $logger->critical('powaznie');
+        $content = file_get_contents($this->logFile);
+        $this->assertStringContainsString('[CRITICAL]', $content);
+    }
+
+    public function testNoticeWritesNoticeLevel(): void
+    {
+        $logger = new Logger($this->logFile, true);
+        $logger->notice('info dodatkowe');
+        $content = file_get_contents($this->logFile);
+        $this->assertStringContainsString('[NOTICE]', $content);
+    }
+
+    public function testGenericLogMethodUsesGivenLevel(): void
+    {
+        $logger = new Logger($this->logFile, true);
+        $logger->log(\Psr\Log\LogLevel::WARNING, 'przez generyczny log()');
+        $content = file_get_contents($this->logFile);
+        $this->assertStringContainsString('[WARNING]', $content);
+        $this->assertStringContainsString('przez generyczny log()', $content);
+    }
+
+    public function testSuccessStillWorksAsCustomLevel(): void
+    {
+        // "success" is not part of PSR-3, but stays as a custom extension -
+        // used e.g. in OcrClient::extractText() after a successful model attempt.
+        $logger = new Logger($this->logFile, true);
+        $logger->success('zadzialalo');
+        $content = file_get_contents($this->logFile);
+        $this->assertStringContainsString('[SUCCESS]', $content);
     }
 }

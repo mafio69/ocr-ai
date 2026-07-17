@@ -89,6 +89,7 @@ class MimeTypeDetectionTest extends TestCase
     public function testDetectsRealWebpImage(): void
     {
         if (!function_exists('imagewebp')) {
+            // trivial-check-allow: legitimate conditional skip - not every PHP environment has WebP in GD
             $this->markTestSkipped('WebP support not available');
         }
         

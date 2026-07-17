@@ -199,31 +199,31 @@ Global state means creating a second `OcrClient` with a different translator sil
 
 ## Medium Priority Issues (8)
 
-### 11. `OcrResponse::getLines()` uses `array_filter()` without callback
-**Location:** `src/Response/OcrResponse.php:69`
+### 11. ~~`OcrResponse::getLines()` uses `array_filter()` without callback~~ - FIXED
+**Location:** `src/Response/OcrResponse.php`
 
-This removes empty strings, `"0"`, `null`, `false` - not just blank lines.
-
-**Recommendation:** Use explicit callback:
-```php
-return array_filter(explode("\n", $this->extractedText), fn($line) => $line !== '');
-```
+**Status:** ✅ FIXED - Added an explicit callback (`$line !== ''`), keeps lines like `"0"`.
+Tests: `OcrResponseTest::testGetLinesKeepsLineContainingOnlyZero`,
+`testGetLinesRemovesOnlyExactlyEmptyLines`.
 
 ---
 
-### 12. `temperature` and `max_tokens` are hardcoded
-**Location:** `src/OcrClient.php:160-161`
+### 12. ~~`temperature` and `max_tokens` are hardcoded~~ - FIXED
+**Location:** `src/OcrClient.php`
 
-**Recommendation:** Make configurable via constructor or method parameters.
+**Status:** ✅ FIXED - Added constructor parameters `temperature` (default 0.1, validated
+0.0-2.0) and `maxTokens` (default 8192, must be > 0). Tests: `ModelConfigurationTest`.
 
 ---
 
-### 13. `Logger` doesn't implement PSR-3
+### 13. ~~`Logger` doesn't implement PSR-3~~ - FIXED
 **Location:** `src/Logging/Logger.php`
 
-Using `Psr\Log\LoggerInterface` would allow integration with Monolog and other standard tools.
-
-**Recommendation:** Implement PSR-3 interface or document why custom logger is needed.
+**Status:** ✅ FIXED - `Logger implements Psr\Log\LoggerInterface` (added `psr/log` to
+`composer.json`). The custom implementation stays (not Monolog) - the interface enables
+future swap/interoperability without changing calling code. The `success()` method stays
+as an extension outside PSR-3, for backward compatibility. Tests in `LoggerTest`
+(instanceof + emergency/alert/critical/notice/generic `log()`).
 
 ---
 
@@ -342,9 +342,9 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 |----------|-------|-------|-----------|
 | Critical | 4 | 4 | 0 |
 | High | 6 | 6 | 0 |
-| Medium | 8 | 0 | 8 |
+| Medium | 8 | 3 | 5 |
 | Low | 7 | 0 | 7 |
-| **Total** | **25** | **10** | **15** |
+| **Total** | **25** | **13** | **12** |
 
 ---
 
