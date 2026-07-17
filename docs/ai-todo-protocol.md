@@ -16,14 +16,14 @@ Domyślną listą docelową (gdy nic innego nie podano) jest **`dashboard`** —
 zadań dla AI pracujących nad tym projektem, nie dane użytkownika. Każda z czterech komend
 przyjmuje jednak opcjonalną opcję **`--list=<id|nazwa>`**, która pozwala wskazać dowolną inną
 listę TODO (np. główną listę użytkownika) — patrz sekcja "Praca na innej liście niż
-dashboard-tmp" niżej, tam też zasady bezpieczeństwa dla tego trybu.
+dashboard" niżej, tam też zasady bezpieczeństwa dla tego trybu.
 
 ## Cztery komendy
 
-Uruchamiane z `backend/` (lub przez `docker compose exec devbrain php bin/console ...`, jeśli appka chodzi w kontenerze):
+Uruchamiane z `backend/` (lub przez `docker compose exec devbrain php bin/console ...`, jeśli app-ka chodzi w kontenerze):
 
 ```bash
-# 1. Zobacz aktualne zadania i ich numery (domyślnie na dashboard-tmp)
+# 1. Zobacz aktualne zadania i ich numery (domyślnie na dashboard)
 php bin/console app:todo:list
 
 # 2. Oznacz zadanie numer N jako wykonane
@@ -35,7 +35,7 @@ php bin/console app:todo:note 3 "Plan: krok 1 ..., krok 2 ..."
 # 4. Zaproponuj NOWE zadanie (dopisywany automatyczny prefiks "[PROPOZYCJA]" w tytule)
 php bin/console app:todo:propose "Tytuł propozycji" "Opcjonalny opis/uzasadnienie"
 
-# Każda z powyższych przyjmuje --list=<id|nazwa>, żeby celować w inną listę niż dashboard-tmp:
+# Każda z powyższych przyjmuje --list=<id|nazwa>, żeby celować w inną listę niż dashboard:
 php bin/console app:todo:list --list="DevBrain — budowa"
 php bin/console app:todo:propose "Tytuł" "Opis" --list=1
 ```
@@ -44,7 +44,7 @@ php bin/console app:todo:propose "Tytuł" "Opis" --list=1
 (wcześniej można było tylko czytać/rezerwować/kończyć/komentować istniejące zadania). Prefiks
 `[PROPOZYCJA]` pozwala użytkownikowi od razu odróżnić sugestię AI od zadań, które sam dodał —
 to on decyduje, czy ją zostawić czy usunąć. Działa teraz na dowolnej liście przez `--list`, nie
-tylko na `dashboard-tmp`.
+tylko na `dashboard`.
 
 ## MCP server (opcjonalny, wygodniejszy sposób)
 
@@ -94,7 +94,7 @@ php bin/console app:todo:import /sciezka/do/pliku.md --list="Inna nazwa"
 Zasady parsera (`App\Command\TodoImportCommand::parse()`):
 
 - `# list: <nazwa>` jest wymagane (chyba że podasz `--list`) — wybiera istniejącą listę po
-  nazwie albo tworzy nową (nieprzypisaną do właściciela, jak `dashboard-tmp`), jeśli jej jeszcze
+  nazwie albo tworzy nową (nieprzypisaną do właściciela, jak `dashboard`), jeśli jej jeszcze
   nie ma. Import do **istniejącej** listy dopisuje zadania na koniec — nie usuwa/nie nadpisuje
   tego, co już tam jest.
 - `description:` (opcjonalne, tylko przed pierwszym zadaniem) ustawia/nadpisuje opis całej
@@ -106,9 +106,9 @@ Zasady parsera (`App\Command\TodoImportCommand::parse()`):
   `[PROPOZYCJA]` (bo to nie sugestia AI do zaakceptowania, tylko bezpośredni import treści, którą
   user sam dostarczył/zaakceptował).
 
-## Praca na innej liście niż dashboard-tmp
+## Praca na innej liście niż dashboard
 
-Domyślnie (bez `--list`/`listName`) wszystko dzieje się na `dashboard-tmp` jak dotychczas —
+Domyślnie (bez `--list`/`listName`) wszystko dzieje się na `dashboard` jak dotychczas —
 bezpieczne, bo to lista robocza AI, nie dane użytkownika. Opcja `--list=<id|nazwa>` (albo
 parametr `listName` w MCP) pozwala jednak wskazać dowolną inną listę, np. główną listę
 użytkownika widoczną w UI pod `/todos/{id}`.
@@ -158,7 +158,7 @@ Rozbij na kroki:
 ## Dostęp z przeglądarki
 
 Ta sama lista jest widoczna jako zwykła strona TODO w appce (moduł już istnieje, HTMX,
-checkbox, dodawanie/usuwanie): zakładka **`dashboard-tmp`** na `/todos/{id}` (link wypisuje
+checkbox, dodawanie/usuwanie): zakładka **`dashboard`** na `/todos/{id}` (link wypisuje
 komenda `php bin/console app:seed-source-of-truth`). Klikanie checkboxa w przeglądarce robi
 dokładnie to samo, co `app:todo:done` — to ten sam wiersz w tabeli `todos`.
 
@@ -202,7 +202,7 @@ robimy — zbyt duża złożoność jak na obecne potrzeby.)
 ## Czego NIE robić
 
 - Nie pisz surowego SQL do `todos`/`todo_lists` "bo szybciej".
-- Nie zakładaj nowej listy zamiast `dashboard-tmp` bez pytania użytkownika.
+- Nie zakładaj nowej listy zamiast `dashboard` bez pytania użytkownika.
 - Nie zaznaczaj zadania jako wykonane "na zapas" ani bez wyraźnego polecenia lub realnego
   zakończenia pracy.
 - Nie ruszaj innych list TODO w tej bazie — to może być prywatna lista użytkownika, nie wasza
