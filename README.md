@@ -40,16 +40,12 @@ $loader->loadAll($translator);
 
 $logger = new Logger(__DIR__ . '/storage/logs/ocr.log', true);
 
+// modelMap/modelPriority are optional - omit them for the built-in defaults
+// (OcrClient::DEFAULT_MODEL_MAP), pass your own only if you want different models.
 $client = new OcrClient(
     apiKey: $_ENV['OVH_AI_ENDPOINTS_ACCESS_TOKEN'],
     Logger: $logger,
     translator: $translator,
-    modelMap: [
-        'lite' => 'Qwen3.5-9B',
-        'medium' => 'Mistral-Small-3.2-24B-Instruct-2506',
-        'premium' => 'Qwen3.6-27B',
-    ],
-    modelPriority: ['medium', 'premium', 'lite'],
 );
 
 try {
@@ -96,7 +92,22 @@ GOOGLE_VISION_ENABLED=true
 GOOGLE_API_KEY=your-google-key
 ```
 
-And add 'google_vision' to 'OCR_MODEL_PRIORITY'. If 'GOOGLE_VISION_ENABLED=true' without a key - the constructor will throw an 'InvalidArgumentException' immediately (it does not hide the error).
+```php
+$client = new OcrClient(
+    apiKey: $_ENV['OVH_AI_ENDPOINTS_ACCESS_TOKEN'],
+    logger: $logger,
+    translator: $translator,
+    googleEnabled: true,
+    googleApiKey: $_ENV['GOOGLE_API_KEY'],
+);
+```
+
+That's it - `google_vision` is appended automatically as the last fallback in the model
+priority, you don't need to list it by hand. Uses a plain REST call with an API key
+(`x-goog-api-key` header, generated in the Google Cloud Console in a couple of minutes) -
+no `google/cloud-vision` SDK, no service-account JSON, no extra dependency. If
+`GOOGLE_VISION_ENABLED=true` without a key - the constructor will throw an
+`InvalidArgumentException` immediately (it does not hide the error).
 
 ## API
 

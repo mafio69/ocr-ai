@@ -125,7 +125,60 @@ class ModelValidationTest extends TestCase
             modelMap: [],
             modelPriority: []
         );
-        
+
         $this->assertInstanceOf(OcrClient::class, $client);
+    }
+
+    /**
+     * Zero-config happy path: no $modelMap at all should fall back to
+     * OcrClient::DEFAULT_MODEL_MAP instead of throwing "Model map missing tier".
+     */
+    public function testConstructorUsesDefaultModelMapWhenNoneGiven(): void
+    {
+        $client = new OcrClient(
+            apiKey: 'test-key',
+            logger: $this->logger,
+            translator: $this->translator,
+        );
+
+        $this->assertInstanceOf(OcrClient::class, $client);
+        $this->assertSame(['medium', 'premium', 'lite'], $client->getStrategy());
+    }
+
+    /**
+     * Enabling Google Vision via $googleEnabled alone (without also editing
+     * $modelPriority by hand) should be enough - it gets appended as the last fallback.
+     */
+    public function testGoogleVisionAutoAppendedToPriorityWhenEnabled(): void
+    {
+        $client = new OcrClient(
+            apiKey: 'test-key',
+            logger: $this->logger,
+            translator: $this->translator,
+            modelMap: ['lite' => 'Qwen3.5-9B'],
+            modelPriority: ['lite'],
+            googleEnabled: true,
+            googleApiKey: 'test-google-key'
+        );
+
+        $this->assertSame(['lite', 'google_vision'], $client->getStrategy());
+    }
+
+    /**
+     * If the caller already listed 'google_vision' explicitly, it shouldn't be duplicated.
+     */
+    public function testGoogleVisionNotDuplicatedWhenAlreadyInPriority(): void
+    {
+        $client = new OcrClient(
+            apiKey: 'test-key',
+            logger: $this->logger,
+            translator: $this->translator,
+            modelMap: ['lite' => 'Qwen3.5-9B'],
+            modelPriority: ['google_vision', 'lite'],
+            googleEnabled: true,
+            googleApiKey: 'test-google-key'
+        );
+
+        $this->assertSame(['google_vision', 'lite'], $client->getStrategy());
     }
 }
