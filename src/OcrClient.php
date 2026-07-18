@@ -126,7 +126,7 @@ class OcrClient implements OcrClientInterface
 
         $this->validateModelConfiguration($modelMap, $modelPriority, $googleEnabled);
 
-        // Jeśli Google wyłączony - usuń z listy prób
+        // If Google disabled - remove from attempt list
         if (!$this->googleEnabled) {
             $this->modelStrategy = array_values(array_filter(
                 $modelPriority,
@@ -606,7 +606,7 @@ class OcrClient implements OcrClientInterface
                 );
             }
 
-            // Google zwraca error w responses[0]['error'] jeśli coś nie poszło
+            // Google returns error in responses[0]['error'] if something went wrong
             if (isset($body['responses'][0]['error'])) {
                 $err = $body['responses'][0]['error'];
                 throw new OcrException(

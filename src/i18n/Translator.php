@@ -86,13 +86,13 @@ class Translator
         $keys = explode('.', $key);
         $locale = $this->locale;
 
-        // Spróbuj aktualny język
+        // Try current locale
         $value = $this->getFromLocale($locale, $keys);
         if ($value !== null) {
             return $value;
         }
 
-        // Fallback do domyślnego języka
+        // Fallback to default locale
         if ($locale !== $this->fallbackLocale) {
             $value = $this->getFromLocale($this->fallbackLocale, $keys);
             if ($value !== null) {
@@ -100,7 +100,7 @@ class Translator
             }
         }
 
-        // Zwróć sam klucz jeśli nie ma tłumaczenia
+        // Return the key itself if no translation found
         return $key;
     }
 
