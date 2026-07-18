@@ -9,9 +9,10 @@ use Throwable;
 
 class ErrorHandler
 {
-    private Logger $logger;
-    private Translator $translator;
-    private bool $isDevelopment;
+    // Audit #19: assigned once in the constructor, never mutated afterwards.
+    private readonly Logger $logger;
+    private readonly Translator $translator;
+    private readonly bool $isDevelopment;
 
     public function __construct(Logger $logger, Translator $translator, bool $isDevelopment = false)
     {
@@ -62,7 +63,7 @@ class ErrorHandler
     {
         $userMessage = $this->isDevelopment 
             ? $e->getMessage()
-            : $this->translator->trans('errors.unexpected_error');
+            : $this->getTranslatedOrFallback('errors.unexpected_error', 'An unexpected error occurred');
 
         return new ErrorResponse(
             userMessage: $userMessage,
@@ -70,6 +71,12 @@ class ErrorHandler
             code: 'INTERNAL_ERROR',
             isDevelopment: $this->isDevelopment
         );
+    }
+
+    private function getTranslatedOrFallback(string $key, string $fallback): string
+    {
+        $translated = $this->translator->trans($key);
+        return $translated !== $key ? $translated : $fallback;
     }
 
     private function logException(Throwable $exception): void

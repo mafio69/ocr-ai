@@ -37,3 +37,7 @@ Thumbs.db
 
 # Local OCR test fixtures (may contain personal/sensitive images) - never commit
 /test-fixtures/
+/tests/img-to-test/
+
+# Claude Code local tool settings (machine-specific, not project config)
+.claude/

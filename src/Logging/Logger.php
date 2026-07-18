@@ -14,13 +14,23 @@ use Stringable;
  */
 class Logger implements LoggerInterface
 {
-    private string $logFile;
-    private bool $enabled;
+    private const DEFAULT_MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+    private const TAIL_CHUNK_SIZE = 4096;
 
-    public function __construct(string $logFile, bool $enabled = true)
+    // Audit #19: assigned once in the constructor, never mutated afterwards.
+    private readonly string $logFile;
+    private readonly bool $enabled;
+    private readonly int $maxSizeBytes;
+
+    /**
+     * @param int $maxSizeBytes Rotate the log file once it reaches this size (audit #14).
+     *                          A single backup generation ({logFile}.1) is kept.
+     */
+    public function __construct(string $logFile, bool $enabled = true, int $maxSizeBytes = self::DEFAULT_MAX_SIZE_BYTES)
     {
         $this->logFile = $logFile;
         $this->enabled = $enabled;
+        $this->maxSizeBytes = $maxSizeBytes;
 
         $this->ensureLogDirectory();
     }
@@ -88,6 +98,8 @@ class Logger implements LoggerInterface
             return;
         }
 
+        $this->rotateIfNeeded();
+
         $timestamp = date('Y-m-d H:i:s');
         $contextJson = !empty($context) ? json_encode($context, JSON_UNESCAPED_UNICODE) : '';
 
@@ -98,6 +110,28 @@ class Logger implements LoggerInterface
         $logLine .= "\n";
 
         file_put_contents($this->logFile, $logLine, FILE_APPEND);
+    }
+
+    /**
+     * Audit #14: the log file used to grow indefinitely. Once it reaches maxSizeBytes,
+     * the current file is moved to "{logFile}.1" (overwriting any previous backup) and a
+     * fresh file is started. Simplest useful rotation - a single backup generation, not a
+     * numbered history, since nothing in this project reads old rotated logs.
+     */
+    private function rotateIfNeeded(): void
+    {
+        if (!file_exists($this->logFile)) {
+            return;
+        }
+
+        clearstatcache(true, $this->logFile);
+        if (filesize($this->logFile) < $this->maxSizeBytes) {
+            return;
+        }
+
+        $backupFile = $this->logFile . '.1';
+        @unlink($backupFile);
+        rename($this->logFile, $backupFile);
     }
 
     private function ensureLogDirectory(): void
@@ -114,7 +148,47 @@ class Logger implements LoggerInterface
             return [];
         }
 
-        $allLines = file($this->logFile);
-        return array_slice($allLines, -$lines);
+        return $this->tail($this->logFile, $lines);
+    }
+
+    /**
+     * Audit #15: getLogs() used to load the entire file into memory via file(), which is
+     * wasteful for large logs. This reads backward from the end of the file in fixed-size
+     * chunks, stopping as soon as enough newlines have been seen - memory use stays
+     * bounded by chunk size + the requested number of lines, not by total file size.
+     *
+     * @return string[] Lines in original (oldest-first) order, each including its trailing
+     *                   "\n" (except possibly the last line of the file) - same shape as
+     *                   the previous file()-based implementation.
+     */
+    private function tail(string $filePath, int $maxLines): array
+    {
+        if ($maxLines <= 0) {
+            return [];
+        }
+
+        $handle = fopen($filePath, 'rb');
+        if ($handle === false) {
+            return [];
+        }
+
+        try {
+            $buffer = '';
+            $pos = filesize($filePath);
+
+            while ($pos > 0 && substr_count($buffer, "\n") <= $maxLines) {
+                $readSize = min(self::TAIL_CHUNK_SIZE, $pos);
+                $pos -= $readSize;
+                fseek($handle, $pos);
+                $buffer = fread($handle, $readSize) . $buffer;
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        $lines = preg_split('/(?<=\n)/', $buffer);
+        $lines = array_values(array_filter($lines, static fn (string $line): bool => $line !== ''));
+
+        return array_slice($lines, -$maxLines);
     }
 }

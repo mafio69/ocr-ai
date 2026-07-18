@@ -5,8 +5,10 @@ namespace OvhOcr\i18n;
 class Translator
 {
     private array $translations = [];
+    // Mutable by design - setLocale() changes it after construction, so it stays non-readonly.
     private string $locale = 'en';
-    private string $fallbackLocale = 'en';
+    // Audit #19: never reassigned after the constructor, unlike $locale above.
+    private readonly string $fallbackLocale;
 
     public function __construct(string $locale = 'en', string $fallbackLocale = 'en')
     {
@@ -15,11 +17,20 @@ class Translator
     }
 
     /**
-     * Ładuje tłumaczenia
+     * Ładuje tłumaczenia.
+     *
+     * Audit #22: a second load() call for the same locale used to completely replace the
+     * first set instead of merging - so calling load('pl', [...]) twice would silently
+     * drop any keys only present in the first call. array_replace_recursive() merges
+     * nested keys (new values win on conflicts), matching what callers actually expect
+     * when loading translations incrementally (e.g. multiple files for one locale).
      */
     public function load(string $locale, array $translations): self
     {
-        $this->translations[$locale] = $translations;
+        $this->translations[$locale] = array_replace_recursive(
+            $this->translations[$locale] ?? [],
+            $translations
+        );
         return $this;
     }
 

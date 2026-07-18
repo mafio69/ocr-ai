@@ -85,4 +85,26 @@ class TranslatorTest extends TestCase
         $this->assertNotSame('errors.file_read_error', $result);
         $this->assertStringContainsString('pliku', $result);
     }
+
+    // --- Audit #22: load() should merge, not overwrite ---
+
+    public function testSecondLoadCallMergesInsteadOfReplacing(): void
+    {
+        $t = new Translator('xx', 'en');
+        $t->load('xx', ['errors' => ['a' => 'First A']]);
+        $t->load('xx', ['errors' => ['b' => 'Second B']]);
+
+        $this->assertSame('First A', $t->trans('errors.a'));
+        $this->assertSame('Second B', $t->trans('errors.b'));
+    }
+
+    public function testSecondLoadCallOverwritesOnlyConflictingKeys(): void
+    {
+        $t = new Translator('xx', 'en');
+        $t->load('xx', ['errors' => ['a' => 'Original', 'b' => 'Keep me']]);
+        $t->load('xx', ['errors' => ['a' => 'Updated']]);
+
+        $this->assertSame('Updated', $t->trans('errors.a'));
+        $this->assertSame('Keep me', $t->trans('errors.b'));
+    }
 }

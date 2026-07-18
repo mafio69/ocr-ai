@@ -93,4 +93,29 @@ class OcrResponseTest extends TestCase
         $response = new OcrResponse([], 'unknown');
         $this->assertSame('', $response->getText());
     }
+
+    // --- Audit #20: saveToFile() must not fail silently ---
+
+    public function testSaveToFileThrowsWhenDirectoryIsNotWritable(): void
+    {
+        if (function_exists('posix_getuid') && posix_getuid() === 0) {
+            // trivial-check-allow: running as root bypasses filesystem permission checks entirely
+            $this->markTestSkipped('Cannot force a permission-denied write while running as root');
+        }
+
+        $dir = sys_get_temp_dir() . '/ocr_savetofile_test_' . uniqid();
+        mkdir($dir, 0755);
+        chmod($dir, 0555); // read + execute only, no write
+
+        $data = ['choices' => [['message' => ['content' => 'tekst']]]];
+        $response = new OcrResponse($data);
+
+        try {
+            $this->expectException(\RuntimeException::class);
+            $response->saveToFile($dir . '/output.txt');
+        } finally {
+            chmod($dir, 0755);
+            rmdir($dir);
+        }
+    }
 }

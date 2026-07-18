@@ -123,4 +123,74 @@ class LoggerTest extends TestCase
         $content = file_get_contents($this->logFile);
         $this->assertStringContainsString('[SUCCESS]', $content);
     }
+
+    // --- Audit #14: log rotation ---
+
+    public function testRotatesLogFileWhenMaxSizeExceeded(): void
+    {
+        $logger = new Logger($this->logFile, true, maxSizeBytes: 100);
+
+        // Each line is a few dozen bytes - a handful of writes will exceed the 100 byte cap.
+        for ($i = 0; $i < 10; $i++) {
+            $logger->info("linia numer {$i}");
+        }
+
+        $backupFile = $this->logFile . '.1';
+        $this->assertFileExists($backupFile, 'Rotation should create a .1 backup once the size cap is exceeded');
+        $this->assertFileExists($this->logFile, 'A fresh log file should exist after rotation');
+
+        unlink($backupFile);
+    }
+
+    public function testDoesNotRotateBelowMaxSize(): void
+    {
+        $logger = new Logger($this->logFile, true, maxSizeBytes: 1024 * 1024);
+        $logger->info('krotka linia');
+
+        $this->assertFileDoesNotExist($this->logFile . '.1');
+    }
+
+    // --- Audit #15: getLogs() tail without loading the whole file ---
+
+    public function testGetLogsReturnsLastNLinesInOrder(): void
+    {
+        $logger = new Logger($this->logFile, true);
+
+        for ($i = 1; $i <= 20; $i++) {
+            $logger->info("linia {$i}");
+        }
+
+        $logs = $logger->getLogs(5);
+
+        $this->assertCount(5, $logs);
+        $this->assertStringContainsString('linia 16', $logs[0]);
+        $this->assertStringContainsString('linia 20', $logs[4]);
+    }
+
+    public function testGetLogsWorksAcrossMultipleReadChunks(): void
+    {
+        // TAIL_CHUNK_SIZE is 4096 bytes internally - write enough lines to force the
+        // tail() implementation to read back across more than one chunk.
+        $logger = new Logger($this->logFile, true);
+
+        for ($i = 1; $i <= 500; $i++) {
+            $logger->info("linia numer {$i} z dodatkowa tresc zeby linia byla dluzsza");
+        }
+
+        $logs = $logger->getLogs(3);
+
+        $this->assertCount(3, $logs);
+        $this->assertStringContainsString('linia numer 498', $logs[0]);
+        $this->assertStringContainsString('linia numer 500', $logs[2]);
+    }
+
+    public function testGetLogsReturnsAllLinesWhenFewerThanRequested(): void
+    {
+        $logger = new Logger($this->logFile, true);
+        $logger->info('jedyna linia');
+
+        $logs = $logger->getLogs(50);
+
+        $this->assertCount(1, $logs);
+    }
 }

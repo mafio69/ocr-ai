@@ -4,11 +4,12 @@ namespace OvhOcr\Error;
 
 class ErrorResponse
 {
-    private string $userMessage;
-    private string $internalMessage;
-    private array $context;
-    private string $code;
-    private bool $isDevelopment;
+    // Audit #19: assigned once in the constructor, never mutated afterwards.
+    private readonly string $userMessage;
+    private readonly string $internalMessage;
+    private readonly array $context;
+    private readonly string $code;
+    private readonly bool $isDevelopment;
 
     public function __construct(
         string $userMessage,

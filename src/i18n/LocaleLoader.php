@@ -6,7 +6,8 @@ use RuntimeException;
 
 class LocaleLoader
 {
-    private string $localesPath;
+    // Audit #19: assigned once in the constructor, never mutated afterwards.
+    private readonly string $localesPath;
 
     public function __construct(string $localesPath)
     {
@@ -18,7 +19,7 @@ class LocaleLoader
      */
     public function loadAll(Translator $translator): void
     {
-        foreach (glob($this->localesPath . '/*.json') as $file) {
+        foreach ($this->scanLocaleFiles() as $file) {
             $locale = basename($file, '.json');
             $translations = $this->load($locale);
             $translator->load($locale, $translations);
@@ -53,10 +54,29 @@ class LocaleLoader
     {
         $locales = [];
 
-        foreach (glob($this->localesPath . '/*.json') as $file) {
+        foreach ($this->scanLocaleFiles() as $file) {
             $locales[] = basename($file, '.json');
         }
 
         return $locales;
+    }
+
+    /**
+     * Audit #23: glob() returns false on error (e.g. unreadable directory), which would
+     * make a bare foreach() emit a warning and behave as if there were zero files instead
+     * of failing loudly. Centralized here since both loadAll() and getAvailableLocales()
+     * scan the same directory the same way.
+     *
+     * @return string[]
+     */
+    private function scanLocaleFiles(): array
+    {
+        $files = glob($this->localesPath . '/*.json');
+
+        if ($files === false) {
+            throw new RuntimeException("Failed to scan locales directory: {$this->localesPath}");
+        }
+
+        return $files;
     }
 }

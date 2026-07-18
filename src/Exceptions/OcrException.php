@@ -6,9 +6,13 @@ use OvhOcr\i18n\Translator;
 
 class OcrException extends \Exception
 {
-    private array $context = [];
-    private ?string $userMessageKey = null;
-    private array $userMessageParams = [];
+    // Audit #19: all three are unconditionally assigned once in the constructor below and
+    // never mutated afterwards - readonly properties can't carry an inline default value,
+    // which is fine here since the constructor always sets them regardless of which
+    // optional arguments the caller passed.
+    private readonly array $context;
+    private readonly ?string $userMessageKey;
+    private readonly array $userMessageParams;
 
     public function __construct(
         string $message,

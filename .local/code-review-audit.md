@@ -227,39 +227,46 @@ as an extension outside PSR-3, for backward compatibility. Tests in `LoggerTest`
 
 ---
 
-### 14. No log rotation
+### 14. ~~No log rotation~~ - FIXED
 **Location:** `src/Logging/Logger.php`
 
-The log file grows indefinitely.
-
-**Recommendation:** Consider size-based rotation or at least documenting this limitation.
-
----
-
-### 15. `Logger::getLogs()` reads entire file into memory
-**Location:** `src/Logging/Logger.php:71-77`
-
-`file()` loads the whole log. For large files, this is inefficient.
-
-**Recommendation:** Use a seek-based approach or limit earlier.
+**Status:** ✅ FIXED - Added `maxSizeBytes` constructor param (default 5 MB). Once exceeded,
+the current file is rotated to `{logFile}.1` (single backup generation, overwritten each
+time) before the next write. Tests: `LoggerTest::testRotatesLogFileWhenMaxSizeExceeded`,
+`testDoesNotRotateBelowMaxSize`.
 
 ---
 
-### 16. Batch processing is sequential
-**Location:** `src/OcrClient.php:124-136`
+### 15. ~~`Logger::getLogs()` reads entire file into memory~~ - FIXED
+**Location:** `src/Logging/Logger.php`
 
-No parallel processing.
-
-**Recommendation:** For large batches, consider `GuzzleHttp\Pool` or PHP 8.1+ fibers.
+**Status:** ✅ FIXED - Replaced `file()` with a `tail()` helper that reads backward from
+the end of the file in fixed-size chunks, stopping once enough lines are found - memory
+use no longer scales with total file size. Tests: `LoggerTest::testGetLogsReturnsLastNLinesInOrder`,
+`testGetLogsWorksAcrossMultipleReadChunks`, `testGetLogsReturnsAllLinesWhenFewerThanRequested`.
 
 ---
 
-### 17. `buildOcrPrompt()` is hardcoded in Polish
-**Location:** `src/OcrClient.php:206-216`
+### 16. ~~Batch processing is sequential~~ - FIXED (partial, deliberate scope)
+**Location:** `src/OcrClient.php`
 
-The OCR prompt itself is always Polish, even for English documents. This could affect extraction quality.
+**Status:** ✅ FIXED - Added `extractTextBatchConcurrent()` alongside the existing
+sequential `extractTextBatch()` (unchanged, still the default/simplest option). The new
+method sends the first model-tier attempt for every image concurrently via
+`GuzzleHttp\Pool` and falls back to the full sequential `extractText()` only for images
+whose first attempt failed - covers the common case (most images succeed on the preferred
+model) without rewriting the whole fallback chain to be async. User decision: full async
+rewrite of the fallback chain was judged not worth the duplication/risk for a "consider"
+item with no reported real bottleneck. Tests: `BatchConcurrentTest`.
 
-**Recommendation:** Make the prompt language-aware or fully English (more universal).
+---
+
+### 17. ~~`buildOcrPrompt()` is hardcoded in Polish~~ - FIXED
+**Location:** `src/OcrClient.php`
+
+**Status:** ✅ FIXED - Instructions now follow the target document's `$language`: Polish
+documents get Polish instructions, everything else (including `en`) gets English
+instructions with the actual language code embedded.
 
 ---
 
@@ -274,65 +281,73 @@ Constructors shouldn't have global side effects. This couples the client to the 
 
 ## Low Priority Issues (7)
 
-### 19. Properties could be `readonly`
-PHP 8.1+ supports `readonly`, which fits most private properties set only in the constructor.
+### 19. ~~Properties could be `readonly`~~ - FIXED
+**Status:** ✅ FIXED - Added `readonly` to every property that's assigned exactly once in
+the constructor and never mutated afterward, across `OcrClient`, `OcrResponse`, `Logger`,
+`LocaleLoader`, `ErrorHandler`, `ErrorResponse`, `OcrException`, and `Translator::$fallbackLocale`
+(`Translator::$locale` stays mutable - `setLocale()` legitimately changes it after
+construction). `OcrResponse::parseResponse()` was restructured into `parseExtractedText()`
+(returns a value instead of assigning conditionally) so `$extractedText` can be safely
+readonly even for the empty/unrecognized-response case.
 
-**Recommendation:** Add `readonly` modifier where appropriate.
-
----
-
-### 20. `OcrResponse::saveToFile()` doesn't handle `file_put_contents` failure verbosely
-Returns `bool` but doesn't throw or log on failure.
-
-**Recommendation:** Throw exception or log error on failure.
-
----
-
-### 21. `json_decode()` errors are not checked
-**Location:** `src/OcrClient.php:155, 189`
-
-If JSON is invalid, `json_decode` returns `null`, which is caught by the `!is_array()` check, but `json_last_error_msg()` would give better diagnostics.
-
-**Recommendation:** Add error checking:
-```php
-$body = json_decode($response->getBody()->getContents(), true);
-if (json_last_error() !== JSON_ERROR_NONE) {
-    throw new OcrException('Invalid JSON: ' . json_last_error_msg(), 'errors.invalid_response');
-}
-```
+**Follow-up regressions caught by making `$httpClient` readonly, both fixed:**
+- `GoogleVisionHeaderTest` was injecting a mock HTTP client via `ReflectionClass::setValue()`
+  after construction - an outdated technique from before `httpClient` was a constructor
+  parameter. Fixed by injecting it directly through the constructor instead (same pattern
+  already used in `HttpClientInjectionTest`).
+- `LocaleLoaderTest::testThrowsWhenLocalesDirectoryIsUnreadable` assumed `chmod(0000)` always
+  makes `glob()` return `false`; this isn't true on every OS/filesystem. Fixed by checking
+  empirically whether the failure condition actually reproduces before asserting on it, and
+  skipping (with a `trivial-check-allow` marker) if not.
 
 ---
 
-### 22. `Translator::load()` overwrites existing locale data
-Calling `load('pl', ...)` twice replaces the first set entirely instead of merging.
-
-**Recommendation:** Document this behavior or implement merge logic if needed.
-
----
-
-### 23. `LocaleLoader::loadAll()` doesn't handle `glob()` returning `false`
-`glob()` returns `false` on error, which would cause `foreach` to fail.
-
-**Recommendation:** Add check:
-```php
-$files = glob($this->localesPath . '/*.json');
-if ($files === false) {
-    throw new RuntimeException("Failed to scan locales directory");
-}
-foreach ($files as $file) { ... }
-```
+### 20. ~~`OcrResponse::saveToFile()` doesn't handle `file_put_contents` failure verbosely~~ - FIXED
+**Status:** ✅ FIXED - Throws `RuntimeException` (with the failing path) instead of
+silently returning `false`, both when the output directory can't be created and when the
+write itself fails. Still returns `bool` (always `true`) on success. Test:
+`OcrResponseTest::testSaveToFileThrowsWhenDirectoryIsNotWritable`.
 
 ---
 
-### 24. No interface for `OcrClient`
-Consumers can't easily mock it in their tests.
+### 21. ~~`json_decode()` errors are not checked~~ - FIXED
+**Location:** `src/OcrClient.php`
 
-**Recommendation:** Create `OcrClientInterface` for better testability.
+**Status:** ✅ FIXED - Added a shared `decodeJsonResponse()` helper that checks
+`json_last_error()` and throws with `json_last_error_msg()` in the context, used by
+`tryOvhModel()`, `tryGoogleVision()`, and `parseFirstAttemptResponse()`. Tests:
+`JsonResponseValidationTest`.
 
 ---
 
-### 25. `composer.lock` in `.gitignore`
-For applications, `composer.lock` should be committed for reproducible builds. For libraries it's typically excluded, so this is acceptable but worth noting.
+### 22. ~~`Translator::load()` overwrites existing locale data~~ - FIXED
+**Status:** ✅ FIXED - Uses `array_replace_recursive()` to merge with any existing
+translations for that locale instead of replacing them outright. Tests:
+`TranslatorTest::testSecondLoadCallMergesInsteadOfReplacing`,
+`testSecondLoadCallOverwritesOnlyConflictingKeys`.
+
+---
+
+### 23. ~~`LocaleLoader::loadAll()` doesn't handle `glob()` returning `false`~~ - FIXED
+**Status:** ✅ FIXED - Both `loadAll()` and `getAvailableLocales()` now go through a shared
+`scanLocaleFiles()` helper that throws `RuntimeException` if `glob()` returns `false`.
+Test: `LocaleLoaderTest::testThrowsWhenLocalesDirectoryIsUnreadable`.
+
+---
+
+### 24. ~~No interface for `OcrClient`~~ - FIXED
+**Status:** ✅ FIXED - Added `OcrClientInterface` (`extractText`, `extractTextBatch`,
+`extractTextBatchConcurrent`, `getStrategy`); `OcrClient implements` it. Tests:
+`OcrClientInterfaceTest` (includes a test double implementing the interface directly,
+demonstrating the actual point of it).
+
+---
+
+### 25. `composer.lock` in `.gitignore` - reviewed, no action
+**Status:** Reviewed. `composer.json` declares `"type": "library"`, and excluding
+`composer.lock` is the standard, correct convention for libraries (consumers resolve
+versions via their own lock file) - committing it is only recommended for applications.
+Left as-is; this was a note in the original audit, not a defect.
 
 ---
 
@@ -342,9 +357,9 @@ For applications, `composer.lock` should be committed for reproducible builds. F
 |----------|-------|-------|-----------|
 | Critical | 4 | 4 | 0 |
 | High | 6 | 6 | 0 |
-| Medium | 8 | 3 | 5 |
-| Low | 7 | 0 | 7 |
-| **Total** | **25** | **13** | **12** |
+| Medium | 8 | 8 | 0 |
+| Low | 7 | 7 | 0 |
+| **Total** | **25** | **25** | **0** |
 
 ---
 

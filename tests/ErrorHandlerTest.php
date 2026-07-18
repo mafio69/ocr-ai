@@ -214,4 +214,16 @@ class ErrorHandlerTest extends TestCase
         $this->assertArrayNotHasKey('internal', $json['error']);
         $this->assertArrayNotHasKey('context', $json['error']);
     }
+
+    public function testHandleGenericExceptionFallsBackToEnglishWhenKeyMissing(): void
+    {
+        $emptyTranslator = new Translator('pl', 'en');
+        $handler = new ErrorHandler($this->logger, $emptyTranslator, false);
+        
+        $exception = new \RuntimeException('Some error');
+        
+        $response = $handler->handle($exception);
+        
+        $this->assertSame('An unexpected error occurred', $response->getUserMessage());
+    }
 }

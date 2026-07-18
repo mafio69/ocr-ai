@@ -13,7 +13,6 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Middleware;
-use ReflectionClass;
 
 class GoogleVisionHeaderTest extends TestCase
 {
@@ -62,22 +61,21 @@ class GoogleVisionHeaderTest extends TestCase
         $handlerStack->push($history);
         
         $httpClient = new Client(['handler' => $handlerStack]);
-        
-        $client = new OcrClient(
+
+        // httpClient is injected directly via the constructor (added for audit P0 #5) -
+        // this used to be swapped in afterwards via reflection, which broke once
+        // OcrClient::$httpClient became readonly (audit #19). Constructor injection was
+        // already the supported way to do this (see HttpClientInjectionTest.php).
+        return new OcrClient(
             apiKey: 'test-ovh-key',
             logger: $this->logger,
             translator: $this->translator,
             modelMap: [],
             modelPriority: ['google_vision'],
             googleEnabled: true,
-            googleApiKey: 'test-google-api-key-12345'
+            googleApiKey: 'test-google-api-key-12345',
+            httpClient: $httpClient
         );
-        
-        $reflection = new ReflectionClass($client);
-        $property = $reflection->getProperty('httpClient');
-        $property->setValue($client, $httpClient);
-        
-        return $client;
     }
 
     private function createTestImage(): string
