@@ -2,10 +2,10 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
 use OvhOcr\Exceptions\OcrException;
-use OvhOcr\i18n\Translator;
 use OvhOcr\i18n\LocaleLoader;
+use OvhOcr\i18n\Translator;
+use PHPUnit\Framework\TestCase;
 
 class OcrExceptionTest extends TestCase
 {
@@ -14,7 +14,7 @@ class OcrExceptionTest extends TestCase
     protected function setUp(): void
     {
         $this->translator = new Translator('pl', 'en');
-        $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
+        $loader           = new LocaleLoader(__DIR__ . '/../resources/locales');
         $loader->loadAll($this->translator);
     }
 
@@ -33,7 +33,7 @@ class OcrExceptionTest extends TestCase
     public function testContextIsPreserved(): void
     {
         $ctx = ['file' => 'test.png', 'size' => 12345];
-        $e = new OcrException('msg', 'errors.file_not_found', $ctx);
+        $e   = new OcrException('msg', 'errors.file_not_found', $ctx);
         $this->assertSame($ctx, $e->getContext());
     }
 
@@ -43,7 +43,7 @@ class OcrExceptionTest extends TestCase
             'msg',
             'errors.file_too_large',
             [],
-            ['size' => 25, 'max_size' => 20]
+            ['size' => 25, 'max_size' => 20],
         );
         $msg = $e->getUserMessage($this->translator);
         $this->assertNotSame('errors.file_too_large', $msg);
@@ -51,42 +51,42 @@ class OcrExceptionTest extends TestCase
 
     public function testFallbackWhenNoTranslator(): void
     {
-        $e = new OcrException('msg', 'nonexistent.key');
+        $e   = new OcrException('msg', 'nonexistent.key');
         $msg = $e->getUserMessage();
         $this->assertSame('An unexpected error occurred', $msg);
     }
 
     public function testFallbackWhenNoKey(): void
     {
-        $e = new OcrException('msg');
+        $e   = new OcrException('msg');
         $msg = $e->getUserMessage($this->translator);
         $this->assertStringContainsString('Spróbuj później', $msg);
     }
 
     public function testGetUserMessageWithNullTranslator(): void
     {
-        $e = new OcrException('msg', 'errors.file_not_found');
+        $e   = new OcrException('msg', 'errors.file_not_found');
         $msg = $e->getUserMessage(null);
         $this->assertSame('Image file not found', $msg);
     }
 
     public function testGetUserMessageWithoutParamReturnsKey(): void
     {
-        $e = new OcrException('msg', 'errors.file_not_found');
+        $e   = new OcrException('msg', 'errors.file_not_found');
         $msg = $e->getUserMessage();
         $this->assertSame('Image file not found', $msg);
     }
 
     public function testGetUserMessageWithoutKeyReturnsFallback(): void
     {
-        $e = new OcrException('msg');
+        $e   = new OcrException('msg');
         $msg = $e->getUserMessage(null);
         $this->assertSame('An unexpected error occurred', $msg);
     }
 
     public function testGetUserMessageWithoutKeyAndWithoutTranslatorReturnsFallback(): void
     {
-        $e = new OcrException('msg');
+        $e   = new OcrException('msg');
         $msg = $e->getUserMessage();
         $this->assertSame('An unexpected error occurred', $msg);
     }

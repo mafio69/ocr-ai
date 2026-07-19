@@ -2,11 +2,11 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
-use OvhOcr\OcrClient;
-use OvhOcr\Logging\Logger;
-use OvhOcr\i18n\Translator;
 use OvhOcr\i18n\LocaleLoader;
+use OvhOcr\i18n\Translator;
+use OvhOcr\Logging\Logger;
+use OvhOcr\OcrClient;
+use PHPUnit\Framework\TestCase;
 
 class ModelValidationTest extends TestCase
 {
@@ -18,10 +18,10 @@ class ModelValidationTest extends TestCase
     {
         $this->tempDir = sys_get_temp_dir() . '/ocr_model_validation_test_' . uniqid();
         mkdir($this->tempDir, 0755, true);
-        
-        $this->logger = new Logger($this->tempDir . '/test.log', true);
+
+        $this->logger     = new Logger($this->tempDir . '/test.log', true);
         $this->translator = new Translator('pl', 'en');
-        $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
+        $loader           = new LocaleLoader(__DIR__ . '/../resources/locales');
         $loader->loadAll($this->translator);
     }
 
@@ -35,7 +35,7 @@ class ModelValidationTest extends TestCase
         if (!is_dir($dir)) {
             return;
         }
-        
+
         $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
             $path = $dir . '/' . $file;
@@ -48,13 +48,13 @@ class ModelValidationTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Model map missing tier: premium');
-        
+
         new OcrClient(
             apiKey: 'test-key',
             logger: $this->logger,
             translator: $this->translator,
             modelMap: ['lite' => 'Qwen3.5-9B'],
-            modelPriority: ['premium', 'lite']
+            modelPriority: ['premium', 'lite'],
         );
     }
 
@@ -62,13 +62,13 @@ class ModelValidationTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Model map missing tier: medium');
-        
+
         new OcrClient(
             apiKey: 'test-key',
             logger: $this->logger,
             translator: $this->translator,
             modelMap: [],
-            modelPriority: ['medium', 'premium']
+            modelPriority: ['medium', 'premium'],
         );
     }
 
@@ -79,9 +79,9 @@ class ModelValidationTest extends TestCase
             logger: $this->logger,
             translator: $this->translator,
             modelMap: ['lite' => 'Qwen3.5-9B', 'medium' => 'Mistral-Small'],
-            modelPriority: ['medium', 'lite']
+            modelPriority: ['medium', 'lite'],
         );
-        
+
         $this->assertInstanceOf(OcrClient::class, $client);
     }
 
@@ -94,9 +94,9 @@ class ModelValidationTest extends TestCase
             modelMap: ['lite' => 'Qwen3.5-9B'],
             modelPriority: ['google_vision', 'lite'],
             googleEnabled: true,
-            googleApiKey: 'test-google-key'
+            googleCredentialsPath: '/tmp/test-credentials.json',
         );
-        
+
         $this->assertInstanceOf(OcrClient::class, $client);
     }
 
@@ -104,7 +104,7 @@ class ModelValidationTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Model map missing tier: premium');
-        
+
         new OcrClient(
             apiKey: 'test-key',
             logger: $this->logger,
@@ -112,7 +112,7 @@ class ModelValidationTest extends TestCase
             modelMap: ['lite' => 'Qwen3.5-9B'],
             modelPriority: ['google_vision', 'premium'],
             googleEnabled: true,
-            googleApiKey: 'test-google-key'
+            googleCredentialsPath: '/tmp/test-credentials.json',
         );
     }
 
@@ -123,7 +123,7 @@ class ModelValidationTest extends TestCase
             logger: $this->logger,
             translator: $this->translator,
             modelMap: [],
-            modelPriority: []
+            modelPriority: [],
         );
 
         $this->assertInstanceOf(OcrClient::class, $client);
@@ -158,7 +158,7 @@ class ModelValidationTest extends TestCase
             modelMap: ['lite' => 'Qwen3.5-9B'],
             modelPriority: ['lite'],
             googleEnabled: true,
-            googleApiKey: 'test-google-key'
+            googleCredentialsPath: '/tmp/test-credentials.json',
         );
 
         $this->assertSame(['lite', 'google_vision'], $client->getStrategy());
@@ -176,7 +176,7 @@ class ModelValidationTest extends TestCase
             modelMap: ['lite' => 'Qwen3.5-9B'],
             modelPriority: ['google_vision', 'lite'],
             googleEnabled: true,
-            googleApiKey: 'test-google-key'
+            googleCredentialsPath: '/tmp/test-credentials.json',
         );
 
         $this->assertSame(['google_vision', 'lite'], $client->getStrategy());

@@ -2,14 +2,15 @@
 
 namespace OvhOcr;
 
+use Google\Auth\Credentials\ServiceAccountCredentials;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Psr7\Request as PsrRequest;
+use OvhOcr\Exceptions\OcrException;
 use OvhOcr\i18n\Translator;
 use OvhOcr\Logging\Logger;
-use OvhOcr\Exceptions\OcrException;
 use OvhOcr\Pdf\SearchablePdfWriter;
 use OvhOcr\Response\OcrResponse;
 use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
@@ -22,12 +23,12 @@ use Psr\Http\Message\ResponseInterface as PsrResponseInterface;
  */
 class OcrClient implements OcrClientInterface
 {
-    private const OVH_DEFAULT_ENDPOINT = 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions';
+    private const OVH_DEFAULT_ENDPOINT   = 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions';
     private const GOOGLE_VISION_ENDPOINT = 'https://vision.googleapis.com/v1/images:annotate';
-    private const MAX_FILE_SIZE_MB = 20;
-    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-    private const DEFAULT_TEMPERATURE = 0.1;
-    private const DEFAULT_MAX_TOKENS = 8192;
+    private const MAX_FILE_SIZE_MB       = 20;
+    private const ALLOWED_EXTENSIONS     = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    private const DEFAULT_TEMPERATURE    = 0.1;
+    private const DEFAULT_MAX_TOKENS     = 8192;
 
     /**
      * Sensible out-of-the-box model map so a consumer of this library can get going with
@@ -36,8 +37,8 @@ class OcrClient implements OcrClientInterface
      * arg if you want different models.
      */
     public const DEFAULT_MODEL_MAP = [
-        'lite' => 'Qwen3.5-9B',
-        'medium' => 'Mistral-Small-3.2-24B-Instruct-2506',
+        'lite'    => 'Qwen3.5-9B',
+        'medium'  => 'Mistral-Small-3.2-24B-Instruct-2506',
         'premium' => 'Qwen3.6-27B',
     ];
 
@@ -49,7 +50,8 @@ class OcrClient implements OcrClientInterface
     private readonly Logger $logger;
     private readonly Translator $translator;
     private readonly bool $googleEnabled;
-    private readonly ?string $googleApiKey;
+    private readonly ?string $googleCredentialsPath;
+    private readonly ?\Closure $googleTokenProvider;
     private readonly array $modelMap;
     private readonly array $modelStrategy;
     private readonly float $temperature;
@@ -58,17 +60,15 @@ class OcrClient implements OcrClientInterface
     /**
      * @param string $apiKey Token OVH AI Endpoints
      * @param string $apiEndpoint URL do chat/completions (OpenAI-compatible)
-     * @param Logger $logger
-     * @param Translator $translator
      * @param array|null $modelMap ['lite' => 'Qwen3.5-9B', 'medium' => '...', 'premium' => '...'].
      *     Null (default) = use DEFAULT_MODEL_MAP, so a fresh install works with zero extra config.
      *     Pass an empty array explicitly if you really want no OVH models available.
      * @param array $modelPriority Kolejność prób: np. ['medium', 'premium', 'lite']. Jeśli
      *     $googleEnabled=true i 'google_vision' nie jest tu wpisane, zostanie dopisane
      *     automatycznie na końcu - włączenie Google Vision to wtedy tylko dwa argumenty
-     *     ($googleEnabled, $googleApiKey), bez ręcznego edytowania tej listy.
+     *     ($googleEnabled, $googleCredentialsPath), bez ręcznego edytowania tej listy.
      * @param bool $googleEnabled Czy włączyć fallback do Google Vision
-     * @param string|null $googleApiKey Klucz Google (wymagany jeśli googleEnabled)
+     * @param string|null $googleCredentialsPath Ścieżka do pliku JSON z credentials Google (wymagany jeśli googleEnabled)
      * @param Client|null $httpClient Opcjonalny klient HTTP (do testów)
      * @param float $temperature OVH model temperature (0.0-2.0), lower = more deterministic
      * @param int $maxTokens Max tokens for the OVH model response
@@ -81,20 +81,21 @@ class OcrClient implements OcrClientInterface
         ?array $modelMap = null,
         array $modelPriority = ['medium', 'premium', 'lite'],
         bool $googleEnabled = false,
-        ?string $googleApiKey = null,
+        ?string $googleCredentialsPath = null,
         ?Client $httpClient = null,
         float $temperature = self::DEFAULT_TEMPERATURE,
-        int $maxTokens = self::DEFAULT_MAX_TOKENS
+        int $maxTokens = self::DEFAULT_MAX_TOKENS,
+        ?\Closure $googleTokenProvider = null,
     ) {
         if (trim($apiKey) === '') {
             throw new \InvalidArgumentException(
-                'OVH API key cannot be empty. Set OVH_AI_ENDPOINTS_ACCESS_TOKEN in .env'
+                'OVH API key cannot be empty. Set OVH_AI_ENDPOINTS_ACCESS_TOKEN in .env',
             );
         }
 
-        if ($googleEnabled && (!$googleApiKey || trim($googleApiKey) === '')) {
+        if ($googleEnabled && (!$googleCredentialsPath || trim($googleCredentialsPath) === '')) {
             throw new \InvalidArgumentException(
-                'Google Vision is enabled but GOOGLE_API_KEY is empty. Set the key or disable GOOGLE_VISION_ENABLED.'
+                'Google Vision is enabled but GOOGLE_APPLICATION_CREDENTIALS is empty. Set the path to JSON credentials or disable GOOGLE_VISION_ENABLED.',
             );
         }
 
@@ -114,15 +115,16 @@ class OcrClient implements OcrClientInterface
             throw new \InvalidArgumentException("maxTokens must be a positive integer, got: {$maxTokens}");
         }
 
-        $this->apiKey = $apiKey;
-        $this->apiEndpoint = $apiEndpoint;
-        $this->logger = $logger;
-        $this->translator = $translator;
-        $this->googleEnabled = $googleEnabled;
-        $this->googleApiKey = $googleApiKey;
-        $this->modelMap = $modelMap;
-        $this->temperature = $temperature;
-        $this->maxTokens = $maxTokens;
+        $this->apiKey                = $apiKey;
+        $this->apiEndpoint           = $apiEndpoint;
+        $this->logger                = $logger;
+        $this->translator            = $translator;
+        $this->googleEnabled         = $googleEnabled;
+        $this->googleCredentialsPath = $googleCredentialsPath;
+        $this->temperature           = $temperature;
+        $this->maxTokens             = $maxTokens;
+        $this->modelMap              = $modelMap;
+        $this->googleTokenProvider   = $googleTokenProvider;
 
         $this->validateModelConfiguration($modelMap, $modelPriority, $googleEnabled);
 
@@ -130,20 +132,20 @@ class OcrClient implements OcrClientInterface
         if (!$this->googleEnabled) {
             $this->modelStrategy = array_values(array_filter(
                 $modelPriority,
-                fn($m) => $m !== 'google_vision'
+                fn ($m) => $m !== 'google_vision',
             ));
         } else {
             $this->modelStrategy = array_values($modelPriority);
         }
 
         $this->httpClient = $httpClient ?? new Client([
-            'timeout' => 60,
+            'timeout'         => 60,
             'connect_timeout' => 10,
         ]);
 
         $this->logger->info('OcrClient initialized', [
-            'endpoint' => $apiEndpoint,
-            'strategy' => $this->modelStrategy,
+            'endpoint'       => $apiEndpoint,
+            'strategy'       => $this->modelStrategy,
             'google_enabled' => $googleEnabled,
         ]);
     }
@@ -162,7 +164,7 @@ class OcrClient implements OcrClientInterface
             }
         }
 
-        $filteredPriority = array_filter($modelPriority, fn($t) => $t !== 'google_vision');
+        $filteredPriority = array_filter($modelPriority, fn ($t) => $t !== 'google_vision');
 
         foreach ($filteredPriority as $tier) {
             if (!isset($modelMap[$tier])) {
@@ -199,14 +201,14 @@ class OcrClient implements OcrClientInterface
                 message: "File not found: {$imagePath}",
                 userMessageKey: 'errors.file_not_found',
                 context: ['file' => $imagePath],
-                code: 404
+                code: 404,
             );
         }
 
         $this->validateImageFile($imagePath);
 
         $this->logger->info($this->translator->trans('messages.extraction_started'), [
-            'file' => basename($imagePath),
+            'file'    => basename($imagePath),
             'size_kb' => round(filesize($imagePath) / 1024, 2),
         ]);
 
@@ -215,7 +217,7 @@ class OcrClient implements OcrClientInterface
         foreach ($this->modelStrategy as $tierName) {
             try {
                 $this->logger->info(
-                    $this->translator->trans('messages.attempting_model', ['model' => $tierName])
+                    $this->translator->trans('messages.attempting_model', ['model' => $tierName]),
                 );
 
                 if ($tierName === 'google_vision') {
@@ -230,7 +232,7 @@ class OcrClient implements OcrClientInterface
                 }
 
                 $this->logger->success(
-                    $this->translator->trans('messages.model_success', ['model' => $tierName])
+                    $this->translator->trans('messages.model_success', ['model' => $tierName]),
                 );
 
                 return new OcrResponse($rawData, $tierName);
@@ -239,7 +241,7 @@ class OcrClient implements OcrClientInterface
                 $lastError = $e;
                 $this->logger->warning(
                     $this->translator->trans('messages.model_failed', ['model' => $tierName]),
-                    ['reason' => $e->getMessage()]
+                    ['reason' => $e->getMessage()],
                 );
                 continue;
             }
@@ -249,7 +251,7 @@ class OcrClient implements OcrClientInterface
             message: 'All models failed. Last error: ' . ($lastError?->getMessage() ?? 'unknown'),
             userMessageKey: 'errors.all_models_failed',
             context: ['attempted' => $this->modelStrategy],
-            code: 503
+            code: 503,
         );
     }
 
@@ -299,7 +301,7 @@ class OcrClient implements OcrClientInterface
             return $this->extractTextBatch($imagePaths, $language);
         }
 
-        $results = [];
+        $results         = [];
         $pendingRequests = [];
 
         foreach ($imagePaths as $path) {
@@ -309,7 +311,7 @@ class OcrClient implements OcrClientInterface
                         message: "File not found: {$path}",
                         userMessageKey: 'errors.file_not_found',
                         context: ['file' => $path],
-                        code: 404
+                        code: 404,
                     );
                 }
                 $this->validateImageFile($path);
@@ -325,7 +327,7 @@ class OcrClient implements OcrClientInterface
         }
 
         $needsFallback = [];
-        $firstTier = $this->modelStrategy[0];
+        $firstTier     = $this->modelStrategy[0];
 
         $requestGenerator = static function () use ($pendingRequests) {
             foreach ($pendingRequests as $path => $request) {
@@ -335,7 +337,7 @@ class OcrClient implements OcrClientInterface
 
         $pool = new Pool($this->httpClient, $requestGenerator(), [
             'concurrency' => max(1, $concurrency),
-            'fulfilled' => function (PsrResponseInterface $response, $path) use (&$results, &$needsFallback, $firstTier) {
+            'fulfilled'   => function (PsrResponseInterface $response, $path) use (&$results, &$needsFallback, $firstTier) {
                 try {
                     $results[$path] = $this->parseFirstAttemptResponse($response, $firstTier);
                 } catch (OcrException) {
@@ -374,7 +376,7 @@ class OcrClient implements OcrClientInterface
             throw new OcrException(
                 message: "No model mapping for tier: {$tier}",
                 userMessageKey: 'errors.ovh_api_error',
-                context: ['tier' => $tier]
+                context: ['tier' => $tier],
             );
         }
 
@@ -384,24 +386,24 @@ class OcrClient implements OcrClientInterface
     private function buildOvhRequest(string $imagePath, string $modelName, string $language): PsrRequest
     {
         $mimeType = $this->detectMimeType($imagePath);
-        $content = file_get_contents($imagePath);
+        $content  = file_get_contents($imagePath);
         if ($content === false) {
             throw new OcrException(
                 message: "Failed to read file: {$imagePath}",
                 userMessageKey: 'errors.file_read_error',
                 context: ['file' => $imagePath],
-                code: 500
+                code: 500,
             );
         }
-        $base64 = base64_encode($content);
+        $base64  = base64_encode($content);
         $dataUrl = "data:{$mimeType};base64,{$base64}";
-        $prompt = $this->buildOcrPrompt($language);
+        $prompt  = $this->buildOcrPrompt($language);
 
         $body = json_encode([
-            'model' => $modelName,
+            'model'    => $modelName,
             'messages' => [
                 [
-                    'role' => 'user',
+                    'role'    => 'user',
                     'content' => [
                         ['type' => 'text', 'text' => $prompt],
                         ['type' => 'image_url', 'image_url' => ['url' => $dataUrl]],
@@ -409,13 +411,13 @@ class OcrClient implements OcrClientInterface
                 ],
             ],
             'temperature' => $this->temperature,
-            'max_tokens' => $this->maxTokens,
+            'max_tokens'  => $this->maxTokens,
         ], JSON_THROW_ON_ERROR);
 
         return new PsrRequest('POST', $this->apiEndpoint, [
             'Authorization' => "Bearer {$this->apiKey}",
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
+            'Content-Type'  => 'application/json',
+            'Accept'        => 'application/json',
         ], $body);
     }
 
@@ -427,7 +429,7 @@ class OcrClient implements OcrClientInterface
                 message: "Failed to read file: {$imagePath}",
                 userMessageKey: 'errors.file_read_error',
                 context: ['file' => $imagePath],
-                code: 500
+                code: 500,
             );
         }
         $base64 = base64_encode($content);
@@ -435,15 +437,55 @@ class OcrClient implements OcrClientInterface
         $body = json_encode([
             'requests' => [
                 [
-                    'image' => ['content' => $base64],
+                    'image'    => ['content' => $base64],
                     'features' => [['type' => 'TEXT_DETECTION']],
                 ],
             ],
         ], JSON_THROW_ON_ERROR);
 
         return new PsrRequest('POST', self::GOOGLE_VISION_ENDPOINT, [
-            'x-goog-api-key' => $this->googleApiKey,
+            'Authorization' => 'Bearer ' . $this->getGoogleAccessToken(),
         ], $body);
+    }
+
+    /**
+     * Loads Google credentials from JSON file and returns an access token.
+     * Uses google/auth library for proper OAuth2 flow.
+     */
+    private function getGoogleAccessToken(): string
+    {
+        // Testowalnosc bez prawdziwego klucza: jesli wstrzyknieto provider tokenu, uzyj go.
+        // Produkcja (brak providera) idzie realnym ServiceAccountCredentials ponizej.
+        if ($this->googleTokenProvider !== null) {
+            return (string) ($this->googleTokenProvider)();
+        }
+
+        if (!file_exists($this->googleCredentialsPath)) {
+            throw new OcrException(
+                message: "Google credentials file not found: {$this->googleCredentialsPath}",
+                userMessageKey: 'errors.google_not_configured',
+                context: ['file' => $this->googleCredentialsPath],
+                code: 401,
+            );
+        }
+
+        $credentials = new ServiceAccountCredentials(
+            'https://www.googleapis.com/auth/cloud-vision',
+            $this->googleCredentialsPath,
+        );
+
+        $token = $credentials->fetchAuthToken();
+
+        if (!isset($token['access_token'])) {
+            throw new OcrException(
+                message: 'Failed to obtain Google access token from credentials',
+                userMessageKey: 'errors.google_api_error',
+                context: ['credentials_file' => $this->googleCredentialsPath],
+                code: 401,
+            );
+        }
+
+        return $token['access_token'];
     }
 
     /**
@@ -460,7 +502,7 @@ class OcrClient implements OcrClientInterface
             throw new OcrException(
                 message: 'Invalid JSON in API response: ' . json_last_error_msg(),
                 userMessageKey: $errorKey,
-                context: ['json_error' => json_last_error_msg()]
+                context: ['json_error' => json_last_error_msg()],
             );
         }
 
@@ -470,20 +512,20 @@ class OcrClient implements OcrClientInterface
     private function parseFirstAttemptResponse(PsrResponseInterface $response, string $tier): OcrResponse
     {
         $errorKey = $tier === 'google_vision' ? 'errors.google_api_error' : 'errors.ovh_api_error';
-        $body = $this->decodeJsonResponse($response->getBody()->getContents(), $errorKey);
+        $body     = $this->decodeJsonResponse($response->getBody()->getContents(), $errorKey);
 
         if ($tier === 'google_vision') {
             if (!is_array($body) || !isset($body['responses'][0]) || isset($body['responses'][0]['error'])) {
                 throw new OcrException(
                     message: 'Google Vision returned unexpected response',
-                    userMessageKey: 'errors.google_api_error'
+                    userMessageKey: 'errors.google_api_error',
                 );
             }
         } elseif (!is_array($body) || !isset($body['choices'][0]['message']['content'])) {
             throw new OcrException(
                 message: 'OVH returned unexpected response structure',
                 userMessageKey: 'errors.ovh_api_error',
-                context: ['response_keys' => is_array($body) ? array_keys($body) : 'not-array']
+                context: ['response_keys' => is_array($body) ? array_keys($body) : 'not-array'],
             );
         }
 
@@ -499,31 +541,31 @@ class OcrClient implements OcrClientInterface
     private function tryOvhModel(string $imagePath, string $modelName, string $language): array
     {
         $mimeType = $this->detectMimeType($imagePath);
-        $content = file_get_contents($imagePath);
+        $content  = file_get_contents($imagePath);
         if ($content === false) {
             throw new OcrException(
                 message: "Failed to read file: {$imagePath}",
                 userMessageKey: 'errors.file_read_error',
                 context: ['file' => $imagePath],
-                code: 500
+                code: 500,
             );
         }
-        $base64 = base64_encode($content);
+        $base64  = base64_encode($content);
         $dataUrl = "data:{$mimeType};base64,{$base64}";
-        $prompt = $this->buildOcrPrompt($language);
+        $prompt  = $this->buildOcrPrompt($language);
 
         try {
             $response = $this->httpClient->post($this->apiEndpoint, [
                 'headers' => [
                     'Authorization' => "Bearer {$this->apiKey}",
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
+                    'Content-Type'  => 'application/json',
+                    'Accept'        => 'application/json',
                 ],
                 'json' => [
-                    'model' => $modelName,
+                    'model'    => $modelName,
                     'messages' => [
                         [
-                            'role' => 'user',
+                            'role'    => 'user',
                             'content' => [
                                 ['type' => 'text', 'text' => $prompt],
                                 ['type' => 'image_url', 'image_url' => ['url' => $dataUrl]],
@@ -531,7 +573,7 @@ class OcrClient implements OcrClientInterface
                         ],
                     ],
                     'temperature' => $this->temperature,
-                    'max_tokens' => $this->maxTokens,
+                    'max_tokens'  => $this->maxTokens,
                 ],
             ]);
 
@@ -541,19 +583,19 @@ class OcrClient implements OcrClientInterface
                 throw new OcrException(
                     message: 'OVH returned unexpected response structure',
                     userMessageKey: 'errors.ovh_api_error',
-                    context: ['response_keys' => is_array($body) ? array_keys($body) : 'not-array']
+                    context: ['response_keys' => is_array($body) ? array_keys($body) : 'not-array'],
                 );
             }
 
             return $body;
 
         } catch (GuzzleException $e) {
-            $statusCode = $e instanceof RequestException ? $e->getResponse()?->getStatusCode() : null;
+            $statusCode   = $e instanceof RequestException ? $e->getResponse()?->getStatusCode() : null;
             $responseBody = $e instanceof RequestException ? $e->getResponse()?->getBody()?->getContents() : null;
 
             $this->logger->error('OVH API error', [
-                'model' => $modelName,
-                'status' => $statusCode,
+                'model'    => $modelName,
+                'status'   => $statusCode,
                 'response' => $responseBody ? substr($responseBody, 0, 500) : null,
             ]);
 
@@ -561,9 +603,9 @@ class OcrClient implements OcrClientInterface
                 message: 'OVH API error' . ($statusCode ? " [{$statusCode}]" : '') . ': ' . $e->getMessage(),
                 userMessageKey: 'errors.ovh_api_error',
                 context: [
-                    'model' => $modelName,
+                    'model'       => $modelName,
                     'status_code' => $statusCode,
-                ]
+                ],
             );
         }
     }
@@ -579,18 +621,18 @@ class OcrClient implements OcrClientInterface
                 message: "Failed to read file: {$imagePath}",
                 userMessageKey: 'errors.file_read_error',
                 context: ['file' => $imagePath],
-                code: 500
+                code: 500,
             );
         }
         $base64 = base64_encode($content);
 
         try {
             $response = $this->httpClient->post(self::GOOGLE_VISION_ENDPOINT, [
-                'headers' => ['x-goog-api-key' => $this->googleApiKey],
-                'json' => [
+                'headers' => ['Authorization' => 'Bearer ' . $this->getGoogleAccessToken()],
+                'json'    => [
                     'requests' => [
                         [
-                            'image' => ['content' => $base64],
+                            'image'    => ['content' => $base64],
                             'features' => [['type' => 'TEXT_DETECTION']],
                         ],
                     ],
@@ -602,7 +644,7 @@ class OcrClient implements OcrClientInterface
             if (!is_array($body) || !isset($body['responses'][0])) {
                 throw new OcrException(
                     message: 'Google Vision returned unexpected response',
-                    userMessageKey: 'errors.google_api_error'
+                    userMessageKey: 'errors.google_api_error',
                 );
             }
 
@@ -612,7 +654,7 @@ class OcrClient implements OcrClientInterface
                 throw new OcrException(
                     message: "Google Vision error: " . ($err['message'] ?? 'unknown'),
                     userMessageKey: 'errors.google_api_error',
-                    context: $err
+                    context: $err,
                 );
             }
 
@@ -624,7 +666,7 @@ class OcrClient implements OcrClientInterface
             throw new OcrException(
                 message: 'Google Vision request failed: ' . $e->getMessage(),
                 userMessageKey: 'errors.google_api_error',
-                context: ['status_code' => $statusCode]
+                context: ['status_code' => $statusCode],
             );
         }
     }
@@ -669,14 +711,14 @@ PROMPT,
                 message: "Invalid image format: {$ext}",
                 userMessageKey: 'errors.invalid_format',
                 context: [
-                    'format' => $ext,
+                    'format'  => $ext,
                     'allowed' => self::ALLOWED_EXTENSIONS,
                 ],
-                code: 400
+                code: 400,
             );
         }
 
-        $size = filesize($imagePath);
+        $size    = filesize($imagePath);
         $maxSize = self::MAX_FILE_SIZE_MB * 1024 * 1024;
 
         if ($size > $maxSize) {
@@ -684,34 +726,35 @@ PROMPT,
                 message: "File too large: " . round($size / 1024 / 1024, 2) . "MB",
                 userMessageKey: 'errors.file_too_large',
                 userMessageParams: [
-                    'size' => round($size / 1024 / 1024, 2),
+                    'size'     => round($size / 1024 / 1024, 2),
                     'max_size' => self::MAX_FILE_SIZE_MB,
                 ],
                 context: ['size' => $size, 'max_size' => $maxSize],
-                code: 413
+                code: 413,
             );
         }
     }
 
     private function detectMimeType(string $imagePath): string
     {
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $finfo    = new \finfo(FILEINFO_MIME_TYPE);
         $mimeType = $finfo->file($imagePath);
-        
+
         if ($mimeType === false) {
             $this->logger->warning('finfo failed to detect MIME type, falling back to extension', [
-                'file' => basename($imagePath)
+                'file' => basename($imagePath),
             ]);
+
             return $this->detectMimeTypeByExtension($imagePath);
         }
-        
+
         $allowedMimeTypes = [
             'image/jpeg' => ['jpg', 'jpeg'],
-            'image/png' => ['png'],
+            'image/png'  => ['png'],
             'image/webp' => ['webp'],
-            'image/gif' => ['gif'],
+            'image/gif'  => ['gif'],
         ];
-        
+
         if (!isset($allowedMimeTypes[$mimeType])) {
             throw new OcrException(
                 message: "Detected MIME type not allowed: {$mimeType}",
@@ -719,45 +762,45 @@ PROMPT,
                 context: [
                     'detected_mime' => $mimeType,
                     'allowed_mimes' => array_keys($allowedMimeTypes),
-                    'file' => basename($imagePath),
+                    'file'          => basename($imagePath),
                 ],
-                code: 400
+                code: 400,
             );
         }
-        
-        $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
+
+        $ext                = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
         $expectedExtensions = $allowedMimeTypes[$mimeType];
-        
+
         if (!in_array($ext, $expectedExtensions, true)) {
             throw new OcrException(
                 message: "File extension '{$ext}' does not match detected MIME type '{$mimeType}'",
                 userMessageKey: 'errors.invalid_format',
                 context: [
-                    'extension' => $ext,
-                    'mime_type' => $mimeType,
+                    'extension'           => $ext,
+                    'mime_type'           => $mimeType,
                     'expected_extensions' => $expectedExtensions,
                 ],
-                code: 400
+                code: 400,
             );
         }
-        
+
         return $mimeType;
     }
-    
+
     private function detectMimeTypeByExtension(string $imagePath): string
     {
         $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
-        
+
         return match ($ext) {
             'jpg', 'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            default => throw new OcrException(
+            'png'         => 'image/png',
+            'webp'        => 'image/webp',
+            'gif'         => 'image/gif',
+            default       => throw new OcrException(
                 message: "Cannot detect MIME type for extension: {$ext}",
                 userMessageKey: 'errors.invalid_format',
                 context: ['extension' => $ext],
-                code: 400
+                code: 400,
             ),
         };
     }

@@ -2,8 +2,8 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
 use OvhOcr\Logging\Logger;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class LoggerTest extends TestCase
@@ -56,7 +56,7 @@ class LoggerTest extends TestCase
     public function testCreatesDirectoryIfMissing(): void
     {
         $nestedFile = sys_get_temp_dir() . '/ocr_test_' . uniqid() . '/deep/log.log';
-        $logger = new Logger($nestedFile, true);
+        $logger     = new Logger($nestedFile, true);
         $logger->info('test');
         $this->assertFileExists($nestedFile);
         // Cleanup

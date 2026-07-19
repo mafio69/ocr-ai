@@ -2,16 +2,16 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
-use OvhOcr\OcrClient;
-use OvhOcr\Logging\Logger;
-use OvhOcr\i18n\Translator;
-use OvhOcr\i18n\LocaleLoader;
-use OvhOcr\Exceptions\OcrException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
+use OvhOcr\Exceptions\OcrException;
+use OvhOcr\i18n\LocaleLoader;
+use OvhOcr\i18n\Translator;
+use OvhOcr\Logging\Logger;
+use OvhOcr\OcrClient;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Audit #21: json_decode() errors weren't checked explicitly - malformed JSON silently
@@ -29,9 +29,9 @@ class JsonResponseValidationTest extends TestCase
         $this->tempDir = sys_get_temp_dir() . '/ocr_json_validation_test_' . uniqid();
         mkdir($this->tempDir, 0755, true);
 
-        $this->logger = new Logger($this->tempDir . '/test.log', true);
+        $this->logger     = new Logger($this->tempDir . '/test.log', true);
         $this->translator = new Translator('pl', 'en');
-        $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
+        $loader           = new LocaleLoader(__DIR__ . '/../resources/locales');
         $loader->loadAll($this->translator);
     }
 
@@ -57,8 +57,9 @@ class JsonResponseValidationTest extends TestCase
     private function createTestImage(): string
     {
         $imagePath = $this->tempDir . '/test.jpg';
-        $image = imagecreatetruecolor(10, 10);
+        $image     = imagecreatetruecolor(10, 10);
         imagejpeg($image, $imagePath);
+
         return $imagePath;
     }
 
@@ -75,7 +76,7 @@ class JsonResponseValidationTest extends TestCase
             translator: $this->translator,
             modelMap: ['lite' => 'TestModel'],
             modelPriority: ['lite'],
-            httpClient: $customClient
+            httpClient: $customClient,
         );
 
         try {
@@ -105,8 +106,9 @@ class JsonResponseValidationTest extends TestCase
             modelMap: [],
             modelPriority: ['google_vision'],
             googleEnabled: true,
-            googleApiKey: 'test-google-key',
-            httpClient: $customClient
+            googleCredentialsPath: '/tmp/test-credentials.json',
+            httpClient: $customClient,
+            googleTokenProvider: fn () => 'test-token',
         );
 
         try {

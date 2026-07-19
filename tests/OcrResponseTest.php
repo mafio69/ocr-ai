@@ -2,8 +2,8 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
 use OvhOcr\Response\OcrResponse;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Testy OcrResponse - parsowanie odpowiedzi z OVH i Google.
@@ -37,7 +37,7 @@ class OcrResponseTest extends TestCase
 
     public function testGetLines(): void
     {
-        $data = ['choices' => [['message' => ['content' => "Linia 1\nLinia 2\nLinia 3"]]]];
+        $data     = ['choices' => [['message' => ['content' => "Linia 1\nLinia 2\nLinia 3"]]]];
         $response = new OcrResponse($data);
         $this->assertCount(3, $response->getLines());
     }
@@ -46,29 +46,29 @@ class OcrResponseTest extends TestCase
     {
         // array_filter() without an explicit callback treats the string "0" as falsy and
         // drops it - but it can be real document content (e.g. a sequence number), not a blank line.
-        $data = ['choices' => [['message' => ['content' => "Linia 1\n0\nLinia 3"]]]];
+        $data     = ['choices' => [['message' => ['content' => "Linia 1\n0\nLinia 3"]]]];
         $response = new OcrResponse($data);
         $this->assertSame(['Linia 1', '0', 'Linia 3'], array_values($response->getLines()));
     }
 
     public function testGetLinesRemovesOnlyExactlyEmptyLines(): void
     {
-        $data = ['choices' => [['message' => ['content' => "Linia 1\n\nLinia 3"]]]];
+        $data     = ['choices' => [['message' => ['content' => "Linia 1\n\nLinia 3"]]]];
         $response = new OcrResponse($data);
         $this->assertSame(['Linia 1', 'Linia 3'], array_values($response->getLines()));
     }
 
     public function testGetParagraphs(): void
     {
-        $data = ['choices' => [['message' => ['content' => "Akapit 1\ntekst\n\nAkapit 2"]]]];
-        $response = new OcrResponse($data);
+        $data       = ['choices' => [['message' => ['content' => "Akapit 1\ntekst\n\nAkapit 2"]]]];
+        $response   = new OcrResponse($data);
         $paragraphs = $response->getParagraphs();
         $this->assertCount(2, $paragraphs);
     }
 
     public function testSaveToFile(): void
     {
-        $data = ['choices' => [['message' => ['content' => 'Testowy tekst']]]];
+        $data     = ['choices' => [['message' => ['content' => 'Testowy tekst']]]];
         $response = new OcrResponse($data);
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'ocr_test_');
@@ -79,9 +79,9 @@ class OcrResponseTest extends TestCase
 
     public function testToJson(): void
     {
-        $data = ['choices' => [['message' => ['content' => 'Test']]]];
+        $data     = ['choices' => [['message' => ['content' => 'Test']]]];
         $response = new OcrResponse($data, 'medium');
-        $json = json_decode($response->toJson(), true);
+        $json     = json_decode($response->toJson(), true);
 
         $this->assertTrue($json['success']);
         $this->assertSame('Test', $json['data']['text']);
@@ -107,7 +107,7 @@ class OcrResponseTest extends TestCase
         mkdir($dir, 0755);
         chmod($dir, 0555); // read + execute only, no write
 
-        $data = ['choices' => [['message' => ['content' => 'tekst']]]];
+        $data     = ['choices' => [['message' => ['content' => 'tekst']]]];
         $response = new OcrResponse($data);
 
         try {

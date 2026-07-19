@@ -2,16 +2,16 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
 use OvhOcr\i18n\LocaleLoader;
 use OvhOcr\i18n\Translator;
+use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 class LocaleLoaderTest extends TestCase
 {
     public function testGetAvailableLocalesFindsRealLocales(): void
     {
-        $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
+        $loader  = new LocaleLoader(__DIR__ . '/../resources/locales');
         $locales = $loader->getAvailableLocales();
 
         $this->assertContains('pl', $locales);
@@ -20,7 +20,7 @@ class LocaleLoaderTest extends TestCase
 
     public function testLoadAllPopulatesTranslator(): void
     {
-        $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
+        $loader     = new LocaleLoader(__DIR__ . '/../resources/locales');
         $translator = new Translator('pl', 'en');
         $loader->loadAll($translator);
 

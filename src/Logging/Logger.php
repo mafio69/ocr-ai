@@ -15,7 +15,7 @@ use Stringable;
 class Logger implements LoggerInterface
 {
     private const DEFAULT_MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-    private const TAIL_CHUNK_SIZE = 4096;
+    private const TAIL_CHUNK_SIZE        = 4096;
 
     // Audit #19: assigned once in the constructor, never mutated afterwards.
     private readonly string $logFile;
@@ -28,8 +28,8 @@ class Logger implements LoggerInterface
      */
     public function __construct(string $logFile, bool $enabled = true, int $maxSizeBytes = self::DEFAULT_MAX_SIZE_BYTES)
     {
-        $this->logFile = $logFile;
-        $this->enabled = $enabled;
+        $this->logFile      = $logFile;
+        $this->enabled      = $enabled;
         $this->maxSizeBytes = $maxSizeBytes;
 
         $this->ensureLogDirectory();
@@ -100,7 +100,7 @@ class Logger implements LoggerInterface
 
         $this->rotateIfNeeded();
 
-        $timestamp = date('Y-m-d H:i:s');
+        $timestamp   = date('Y-m-d H:i:s');
         $contextJson = !empty($context) ? json_encode($context, JSON_UNESCAPED_UNICODE) : '';
 
         $logLine = "[{$timestamp}] [{$level}] {$message}";
@@ -174,7 +174,7 @@ class Logger implements LoggerInterface
 
         try {
             $buffer = '';
-            $pos = filesize($filePath);
+            $pos    = filesize($filePath);
 
             while ($pos > 0 && substr_count($buffer, "\n") <= $maxLines) {
                 $readSize = min(self::TAIL_CHUNK_SIZE, $pos);

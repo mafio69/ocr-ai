@@ -1,0 +1,14 @@
+{
+  "name": "PHP",
+  "image": "mcr.microsoft.com/devcontainers/php:1-8.4-bullseye",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "forwardPorts": [8080],
+  "overrideCommand": true,
+  "postCreateCommand": "composer install || true",
+  "customizations": {
+    "jetbrains": {
+      "backend": "PhpStorm"
+    }
+  }
+}

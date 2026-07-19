@@ -23,8 +23,10 @@ logs/
 storage/
 tmp/
 
-# Tests
+# Tests / cache narzedzi jakosci
 .phpunit.result.cache
+/.phpunit.cache/
+.php-cs-fixer.cache
 coverage/
 
 # OS
@@ -41,3 +43,8 @@ Thumbs.db
 
 # Claude Code local tool settings (machine-specific, not project config)
 .claude/
+
+# Lokalny scratch + WSZYSTKIE sekrety (klucze Google SA) - nigdy do repo
+/.local/
+mariusz-nauka-*.json
+/docs/devbrain.db

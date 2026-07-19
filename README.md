@@ -59,6 +59,19 @@ try {
 }
 ```
 
+## Manual testing in the browser
+
+`examples/web-test.php` is a tiny, single-file, dependency-free (beyond this library
+itself) test page - pick an image, pick an engine (OVH lite/medium/premium or Google
+Vision), see the extracted text, download the result as a searchable PDF.
+
+```bash
+cp .env.example .env    # fill OVH_AI_ENDPOINTS_ACCESS_TOKEN (+ GOOGLE_API_KEY for Google Vision)
+composer install        # pulls in mpdf/mpdf, needed for the PDF download
+php -S localhost:8000 -t examples
+# -> http://localhost:8000/web-test.php
+```
+
 ## OVH models
 
 All available in OVH AI Endpoints. Approximate prices (check the current ones):

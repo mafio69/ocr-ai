@@ -2,16 +2,16 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
-use OvhOcr\OcrClient;
-use OvhOcr\Logging\Logger;
-use OvhOcr\i18n\Translator;
-use OvhOcr\i18n\LocaleLoader;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Response;
+use OvhOcr\i18n\LocaleLoader;
+use OvhOcr\i18n\Translator;
+use OvhOcr\Logging\Logger;
+use OvhOcr\OcrClient;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Audit #12: temperature/max_tokens used to be hardcoded in tryOvhModel().
@@ -29,9 +29,9 @@ class ModelConfigurationTest extends TestCase
         $this->tempDir = sys_get_temp_dir() . '/ocr_model_config_test_' . uniqid();
         mkdir($this->tempDir, 0755, true);
 
-        $this->logger = new Logger($this->tempDir . '/test.log', true);
+        $this->logger     = new Logger($this->tempDir . '/test.log', true);
         $this->translator = new Translator('pl', 'en');
-        $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
+        $loader           = new LocaleLoader(__DIR__ . '/../resources/locales');
         $loader->loadAll($this->translator);
         $this->requestHistory = [];
     }
@@ -70,12 +70,12 @@ class ModelConfigurationTest extends TestCase
         // Argument unpacking (...) cannot be combined with explicit named arguments
         // in the same call - so we build one named-args array and unpack it as a whole.
         $args = array_merge([
-            'apiKey' => 'test-key',
-            'logger' => $this->logger,
-            'translator' => $this->translator,
-            'modelMap' => ['lite' => 'TestModel'],
+            'apiKey'        => 'test-key',
+            'logger'        => $this->logger,
+            'translator'    => $this->translator,
+            'modelMap'      => ['lite' => 'TestModel'],
             'modelPriority' => ['lite'],
-            'httpClient' => $customClient,
+            'httpClient'    => $customClient,
         ], $extraArgs);
 
         return new OcrClient(...$args);
@@ -84,8 +84,9 @@ class ModelConfigurationTest extends TestCase
     private function createTestImage(): string
     {
         $imagePath = $this->tempDir . '/test.jpg';
-        $image = imagecreatetruecolor(10, 10);
+        $image     = imagecreatetruecolor(10, 10);
         imagejpeg($image, $imagePath);
+
         return $imagePath;
     }
 

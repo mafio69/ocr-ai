@@ -2,12 +2,12 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
+use OvhOcr\i18n\Translator;
+use OvhOcr\Logging\Logger;
 use OvhOcr\OcrClient;
 use OvhOcr\OcrClientInterface;
 use OvhOcr\Response\OcrResponse;
-use OvhOcr\Logging\Logger;
-use OvhOcr\i18n\Translator;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Audit #24: OcrClient previously had no interface, so consumers couldn't substitute a
@@ -22,7 +22,7 @@ class OcrClientInterfaceTest extends TestCase
             logger: new Logger(sys_get_temp_dir() . '/ocr_interface_test_' . uniqid() . '.log'),
             translator: new Translator('pl', 'en'),
             modelMap: ['lite' => 'TestModel'],
-            modelPriority: ['lite']
+            modelPriority: ['lite'],
         );
 
         $this->assertInstanceOf(OcrClientInterface::class, $client);
@@ -32,7 +32,7 @@ class OcrClientInterfaceTest extends TestCase
     {
         // Demonstrates the actual point of the interface: a consumer's test suite can
         // substitute a fake without touching Guzzle/OVH/Google at all.
-        $fake = new class implements OcrClientInterface {
+        $fake = new class () implements OcrClientInterface {
             public function extractText(string $imagePath, string $language = 'pl'): OcrResponse
             {
                 return new OcrResponse(['choices' => [['message' => ['content' => 'fake text']]]], 'fake');

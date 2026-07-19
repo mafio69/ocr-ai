@@ -12,7 +12,7 @@ class Translator
 
     public function __construct(string $locale = 'en', string $fallbackLocale = 'en')
     {
-        $this->locale = $locale;
+        $this->locale         = $locale;
         $this->fallbackLocale = $fallbackLocale;
     }
 
@@ -29,8 +29,9 @@ class Translator
     {
         $this->translations[$locale] = array_replace_recursive(
             $this->translations[$locale] ?? [],
-            $translations
+            $translations,
         );
+
         return $this;
     }
 
@@ -40,6 +41,7 @@ class Translator
     public function setLocale(string $locale): self
     {
         $this->locale = $locale;
+
         return $this;
     }
 
@@ -53,7 +55,7 @@ class Translator
 
     /**
      * Tłumaczy klucz z parameterami
-     * 
+     *
      * Przykłady:
      * trans('errors.file_not_found')
      * trans('validation.file_size_exceeded', ['size' => 100, 'max_size' => 50])
@@ -83,7 +85,7 @@ class Translator
 
     private function get(string $key): string
     {
-        $keys = explode('.', $key);
+        $keys   = explode('.', $key);
         $locale = $this->locale;
 
         // Try current locale

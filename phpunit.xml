@@ -8,6 +8,9 @@
         <testsuite name="OvhOcr Test Suite">
             <directory>tests</directory>
         </testsuite>
+        <testsuite name="integration">
+            <directory>tests/integration</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

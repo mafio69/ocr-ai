@@ -1,0 +1,20 @@
+grumphp:
+    tasks:
+        phpcsfixer:
+            config: .php-cs-fixer.dist.php
+            allow_risky: true
+        
+        phpstan:
+            configuration: phpstan.dist.neon
+            level: 5
+        
+        composer:
+            strict: true
+        
+        git_blacklist:
+            keywords:
+                - 'var_dump('
+                - 'dd('
+                - 'console.log('
+                - 'dump('
+            triggered_by: [php]

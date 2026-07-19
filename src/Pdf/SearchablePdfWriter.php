@@ -37,7 +37,7 @@ class SearchablePdfWriter
     {
         if (!class_exists(Mpdf::class)) {
             throw new RuntimeException(
-                'SearchablePdfWriter requires mpdf/mpdf, which is not installed. Run: composer require mpdf/mpdf'
+                'SearchablePdfWriter requires mpdf/mpdf, which is not installed. Run: composer require mpdf/mpdf',
             );
         }
 
@@ -51,14 +51,14 @@ class SearchablePdfWriter
         // mPDF works in mm; treat the image as self::DPI dots per inch to size the PDF
         // page to the image's exact aspect ratio (matches how most tools interpret
         // raster images with no embedded DPI metadata).
-        $widthMm = $widthPx / self::DPI * 25.4;
+        $widthMm  = $widthPx / self::DPI * 25.4;
         $heightMm = $heightPx / self::DPI * 25.4;
 
         $mpdf = new Mpdf([
-            'format' => [$widthMm, $heightMm],
-            'margin_left' => 0,
-            'margin_right' => 0,
-            'margin_top' => 0,
+            'format'        => [$widthMm, $heightMm],
+            'margin_left'   => 0,
+            'margin_right'  => 0,
+            'margin_top'    => 0,
             'margin_bottom' => 0,
             'margin_header' => 0,
             'margin_footer' => 0,
@@ -87,7 +87,7 @@ class SearchablePdfWriter
             0,
             0,
             $widthMm,
-            $heightMm
+            $heightMm,
         );
         $mpdf->SetAlpha(1.0, 'Normal');
 

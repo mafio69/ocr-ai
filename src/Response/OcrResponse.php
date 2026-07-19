@@ -12,8 +12,8 @@ class OcrResponse
 
     public function __construct(array $data, string $usedModel = 'unknown')
     {
-        $this->data = $data;
-        $this->usedModel = $usedModel;
+        $this->data          = $data;
+        $this->usedModel     = $usedModel;
         $this->extractedText = $this->parseExtractedText();
     }
 
@@ -94,7 +94,7 @@ class OcrResponse
         // would also drop lines like "0", which can be real document content, not a blank line.
         return array_filter(
             explode("\n", $this->extractedText),
-            static fn (string $line): bool => $line !== ''
+            static fn (string $line): bool => $line !== '',
         );
     }
 
@@ -103,8 +103,9 @@ class OcrResponse
      */
     public function getParagraphs(): array
     {
-        $text = $this->getText();
+        $text       = $this->getText();
         $paragraphs = preg_split('/\n\s*\n/', $text);
+
         return array_filter(array_map('trim', $paragraphs));
     }
 
@@ -115,10 +116,10 @@ class OcrResponse
     {
         return json_encode([
             'success' => true,
-            'data' => [
-                'text' => $this->getText(),
-                'model' => $this->usedModel,
-                'lineCount' => count($this->getLines()),
+            'data'    => [
+                'text'           => $this->getText(),
+                'model'          => $this->usedModel,
+                'lineCount'      => count($this->getLines()),
                 'characterCount' => strlen($this->getText()),
             ],
         ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);

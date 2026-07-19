@@ -20,7 +20,7 @@ class LocaleLoader
     public function loadAll(Translator $translator): void
     {
         foreach ($this->scanLocaleFiles() as $file) {
-            $locale = basename($file, '.json');
+            $locale       = basename($file, '.json');
             $translations = $this->load($locale);
             $translator->load($locale, $translations);
         }

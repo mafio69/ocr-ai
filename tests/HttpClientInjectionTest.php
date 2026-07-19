@@ -2,17 +2,17 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
-use OvhOcr\OcrClient;
-use OvhOcr\Logging\Logger;
-use OvhOcr\i18n\Translator;
-use OvhOcr\i18n\LocaleLoader;
-use OvhOcr\Response\OcrResponse;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Response;
+use OvhOcr\i18n\LocaleLoader;
+use OvhOcr\i18n\Translator;
+use OvhOcr\Logging\Logger;
+use OvhOcr\OcrClient;
+use OvhOcr\Response\OcrResponse;
+use PHPUnit\Framework\TestCase;
 
 class HttpClientInjectionTest extends TestCase
 {
@@ -25,10 +25,10 @@ class HttpClientInjectionTest extends TestCase
     {
         $this->tempDir = sys_get_temp_dir() . '/ocr_http_injection_test_' . uniqid();
         mkdir($this->tempDir, 0755, true);
-        
-        $this->logger = new Logger($this->tempDir . '/test.log', true);
+
+        $this->logger     = new Logger($this->tempDir . '/test.log', true);
         $this->translator = new Translator('pl', 'en');
-        $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
+        $loader           = new LocaleLoader(__DIR__ . '/../resources/locales');
         $loader->loadAll($this->translator);
         $this->requestHistory = [];
     }
@@ -43,7 +43,7 @@ class HttpClientInjectionTest extends TestCase
         if (!is_dir($dir)) {
             return;
         }
-        
+
         $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
             $path = $dir . '/' . $file;
@@ -57,29 +57,29 @@ class HttpClientInjectionTest extends TestCase
         $mock = new MockHandler([
             new Response(200, [], json_encode([
                 'choices' => [
-                    ['message' => ['content' => 'Test text from mocked client']]
-                ]
-            ]))
+                    ['message' => ['content' => 'Test text from mocked client']],
+                ],
+            ])),
         ]);
-        
+
         $handlerStack = HandlerStack::create($mock);
-        $history = Middleware::history($this->requestHistory);
+        $history      = Middleware::history($this->requestHistory);
         $handlerStack->push($history);
-        
+
         $customClient = new Client(['handler' => $handlerStack]);
-        
+
         $ocrClient = new OcrClient(
             apiKey: 'test-key',
             logger: $this->logger,
             translator: $this->translator,
             modelMap: ['lite' => 'TestModel'],
             modelPriority: ['lite'],
-            httpClient: $customClient
+            httpClient: $customClient,
         );
-        
+
         $imagePath = $this->createTestImage();
-        $response = $ocrClient->extractText($imagePath);
-        
+        $response  = $ocrClient->extractText($imagePath);
+
         $this->assertInstanceOf(OcrResponse::class, $response);
         $this->assertSame('Test text from mocked client', $response->getText());
         $this->assertCount(1, $this->requestHistory);
@@ -92,9 +92,9 @@ class HttpClientInjectionTest extends TestCase
             logger: $this->logger,
             translator: $this->translator,
             modelMap: ['lite' => 'TestModel'],
-            modelPriority: ['lite']
+            modelPriority: ['lite'],
         );
-        
+
         $this->assertInstanceOf(OcrClient::class, $ocrClient);
     }
 
@@ -103,32 +103,32 @@ class HttpClientInjectionTest extends TestCase
         $mock = new MockHandler([
             new Response(200, [], json_encode([
                 'choices' => [
-                    ['message' => ['content' => 'OVH response']]
-                ]
-            ]))
+                    ['message' => ['content' => 'OVH response']],
+                ],
+            ])),
         ]);
-        
+
         $handlerStack = HandlerStack::create($mock);
-        $history = Middleware::history($this->requestHistory);
+        $history      = Middleware::history($this->requestHistory);
         $handlerStack->push($history);
-        
+
         $customClient = new Client(['handler' => $handlerStack]);
-        
+
         $ocrClient = new OcrClient(
             apiKey: 'test-key',
             logger: $this->logger,
             translator: $this->translator,
             modelMap: ['lite' => 'TestModel'],
             modelPriority: ['lite'],
-            httpClient: $customClient
+            httpClient: $customClient,
         );
-        
+
         $imagePath = $this->createTestImage();
         $ocrClient->extractText($imagePath);
-        
+
         $this->assertCount(1, $this->requestHistory);
         $request = $this->requestHistory[0]['request'];
-        
+
         $this->assertStringContainsString('chat/completions', (string) $request->getUri());
         $this->assertSame('Bearer test-key', $request->getHeaderLine('Authorization'));
     }
@@ -138,17 +138,17 @@ class HttpClientInjectionTest extends TestCase
         $mock = new MockHandler([
             new Response(200, [], json_encode([
                 'responses' => [
-                    ['textAnnotations' => [['description' => 'Google Vision response']]]
-                ]
-            ]))
+                    ['textAnnotations' => [['description' => 'Google Vision response']]],
+                ],
+            ])),
         ]);
-        
+
         $handlerStack = HandlerStack::create($mock);
-        $history = Middleware::history($this->requestHistory);
+        $history      = Middleware::history($this->requestHistory);
         $handlerStack->push($history);
-        
+
         $customClient = new Client(['handler' => $handlerStack]);
-        
+
         $ocrClient = new OcrClient(
             apiKey: 'test-key',
             logger: $this->logger,
@@ -156,52 +156,53 @@ class HttpClientInjectionTest extends TestCase
             modelMap: [],
             modelPriority: ['google_vision'],
             googleEnabled: true,
-            googleApiKey: 'test-google-key',
-            httpClient: $customClient
+            googleCredentialsPath: '/tmp/test-credentials.json',
+            httpClient: $customClient,
+            googleTokenProvider: fn () => 'test-token',
         );
-        
+
         $imagePath = $this->createTestImage();
         $ocrClient->extractText($imagePath);
-        
+
         $this->assertCount(1, $this->requestHistory);
         $request = $this->requestHistory[0]['request'];
-        
+
         $this->assertStringContainsString('vision.googleapis.com', (string) $request->getUri());
-        $this->assertSame('test-google-key', $request->getHeaderLine('x-goog-api-key'));
+        $this->assertSame('Bearer test-token', $request->getHeaderLine('Authorization'));
     }
 
     public function testMultipleRequestsWithInjectedClient(): void
     {
         $mock = new MockHandler([
             new Response(200, [], json_encode([
-                'choices' => [['message' => ['content' => 'First response']]]
+                'choices' => [['message' => ['content' => 'First response']]],
             ])),
             new Response(200, [], json_encode([
-                'choices' => [['message' => ['content' => 'Second response']]]
-            ]))
+                'choices' => [['message' => ['content' => 'Second response']]],
+            ])),
         ]);
-        
+
         $handlerStack = HandlerStack::create($mock);
-        $history = Middleware::history($this->requestHistory);
+        $history      = Middleware::history($this->requestHistory);
         $handlerStack->push($history);
-        
+
         $customClient = new Client(['handler' => $handlerStack]);
-        
+
         $ocrClient = new OcrClient(
             apiKey: 'test-key',
             logger: $this->logger,
             translator: $this->translator,
             modelMap: ['lite' => 'TestModel'],
             modelPriority: ['lite'],
-            httpClient: $customClient
+            httpClient: $customClient,
         );
-        
+
         $imagePath1 = $this->createTestImage('test1.jpg');
         $imagePath2 = $this->createTestImage('test2.jpg');
-        
+
         $response1 = $ocrClient->extractText($imagePath1);
         $response2 = $ocrClient->extractText($imagePath2);
-        
+
         $this->assertSame('First response', $response1->getText());
         $this->assertSame('Second response', $response2->getText());
         $this->assertCount(2, $this->requestHistory);
@@ -210,8 +211,9 @@ class HttpClientInjectionTest extends TestCase
     private function createTestImage(string $filename = 'test.jpg'): string
     {
         $imagePath = $this->tempDir . '/' . $filename;
-        $image = imagecreatetruecolor(10, 10);
+        $image     = imagecreatetruecolor(10, 10);
         imagejpeg($image, $imagePath);
+
         return $imagePath;
     }
 }

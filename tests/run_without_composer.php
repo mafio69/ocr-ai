@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Uruchamia PRAWDZIWE testy bez composera/phpunit.
  * Ładuje ręcznie klasy i wykonuje asercje.
@@ -7,24 +8,24 @@
 
 // Autoloader PSR-4 lite
 spl_autoload_register(function ($class) {
-    $prefix = 'OvhOcr\\';
+    $prefix  = 'OvhOcr\\';
     $baseDir = __DIR__ . '/../src/';
     if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
         return;
     }
     $relative = substr($class, strlen($prefix));
-    $file = $baseDir . str_replace('\\', '/', $relative) . '.php';
+    $file     = $baseDir . str_replace('\\', '/', $relative) . '.php';
     if (file_exists($file)) {
         require $file;
     }
 });
 
-use OvhOcr\i18n\Translator;
-use OvhOcr\i18n\LocaleLoader;
-use OvhOcr\Logging\Logger;
-use OvhOcr\Exceptions\OcrException;
-use OvhOcr\Response\OcrResponse;
 use OvhOcr\Error\ErrorHandler;
+use OvhOcr\Exceptions\OcrException;
+use OvhOcr\i18n\LocaleLoader;
+use OvhOcr\i18n\Translator;
+use OvhOcr\Logging\Logger;
+use OvhOcr\Response\OcrResponse;
 
 $passed = 0;
 $failed = 0;
@@ -43,24 +44,25 @@ function assertTest(string $name, bool $condition, string $detail = ''): void
 
 echo "=== TRANSLATOR ===\n";
 $translator = new Translator('pl', 'en');
-$loader = new LocaleLoader(__DIR__ . '/../resources/locales');
+$loader     = new LocaleLoader(__DIR__ . '/../resources/locales');
 $loader->loadAll($translator);
 
 assertTest('domyślny locale = pl', $translator->getLocale() === 'pl');
 assertTest('trans klucza istniejącego', $translator->trans('errors.file_not_found') !== 'errors.file_not_found');
 assertTest('trans z parametrem', str_contains($translator->trans('messages.attempting_model', ['model' => 'X']), 'X'));
 assertTest('nieznany klucz zwraca sam klucz', $translator->trans('foo.bar') === 'foo.bar');
-assertTest('fallback do en', (function() use ($loader) {
+assertTest('fallback do en', (function () use ($loader) {
     $t = new Translator('xx', 'en');
     $loader->loadAll($t);
     $t->setLocale('xx');
+
     return str_contains(strtolower($t->trans('errors.file_not_found')), 'image');
 })());
 assertTest('__invoke alias', ($translator)('errors.file_not_found') === $translator->trans('errors.file_not_found'));
 
 echo "\n=== LOGGER ===\n";
 $logFile = sys_get_temp_dir() . '/test_' . uniqid() . '.log';
-$logger = new Logger($logFile, true);
+$logger  = new Logger($logFile, true);
 $logger->info('test info', ['k' => 'v']);
 $logger->error('test error');
 
@@ -96,26 +98,27 @@ $json = json_decode($ovhResp->toJson(), true);
 assertTest('toJson valid', $json !== null && $json['success'] === true);
 
 echo "\n=== OCR EXCEPTION + i18n ===\n";
-OcrException::setTranslator($translator);
 $e = new OcrException('Technical msg', 'errors.file_not_found', ['file' => 'x.png']);
 assertTest('getMessage - techniczny', $e->getMessage() === 'Technical msg');
-assertTest('getUserMessage - przetłumaczony', str_contains($e->getUserMessage(), 'zdjęcia'));
+assertTest('getUserMessage - przetłumaczony', str_contains($e->getUserMessage($translator), 'zdjęcia'));
 assertTest('getContext', $e->getContext() === ['file' => 'x.png']);
 assertTest('getUserMessageKey', $e->getUserMessageKey() === 'errors.file_not_found');
 
 $e2 = new OcrException(
-    'msg', 'errors.file_too_large',
-    [], ['size' => 25, 'max_size' => 20]
+    'msg',
+    'errors.file_too_large',
+    [],
+    ['size' => 25, 'max_size' => 20],
 );
-$userMsg = $e2->getUserMessage();
+$userMsg = $e2->getUserMessage($translator);
 assertTest('user message params substitute', str_contains($userMsg, '25') && str_contains($userMsg, '20'), "got: {$userMsg}");
 
 echo "\n=== ERROR HANDLER ===\n";
 $logFile = sys_get_temp_dir() . '/eh_' . uniqid() . '.log';
 $logger3 = new Logger($logFile, true);
-$handler = new ErrorHandler($logger3, false);
+$handler = new ErrorHandler($logger3, $translator, false);
 
-$ex = new OcrException('technical', 'errors.ovh_api_error', ['status' => 500]);
+$ex  = new OcrException('technical', 'errors.ovh_api_error', ['status' => 500]);
 $err = $handler->handle($ex);
 assertTest('handler zwraca ErrorResponse', $err->getUserMessage() !== '');
 assertTest('httpStatusCode OCR_ERROR = 422', $err->getHttpStatusCode() === 422);
@@ -125,9 +128,9 @@ assertTest('errorResponse toJson valid', $json !== null && $json['success'] === 
 assertTest('user message w JSON', !empty($json['error']['message']));
 
 // Development mode = pełne info
-$devHandler = new ErrorHandler($logger3, true);
-$devErr = $devHandler->handle($ex);
-$devJson = json_decode($devErr->toJson(), true);
+$devHandler = new ErrorHandler($logger3, $translator, true);
+$devErr     = $devHandler->handle($ex);
+$devJson    = json_decode($devErr->toJson(), true);
 assertTest('dev mode ma internal message', isset($devJson['error']['internal']));
 assertTest('prod mode NIE ma internal', !isset(json_decode($err->toJson(), true)['error']['internal']));
 

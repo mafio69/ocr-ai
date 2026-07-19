@@ -2,9 +2,9 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
-use OvhOcr\i18n\Translator;
 use OvhOcr\i18n\LocaleLoader;
+use OvhOcr\i18n\Translator;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Testy Translatora - PRAWDZIWE testy, bez mocków.
@@ -17,7 +17,7 @@ class TranslatorTest extends TestCase
     protected function setUp(): void
     {
         $this->translator = new Translator('pl', 'en');
-        $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
+        $loader           = new LocaleLoader(__DIR__ . '/../resources/locales');
         $loader->loadAll($this->translator);
     }
 
@@ -55,7 +55,7 @@ class TranslatorTest extends TestCase
     public function testFallbackToEnglishWhenPolishMissing(): void
     {
         // Załaduj minimalny locale bez klucza
-        $t = new Translator('xx', 'en');
+        $t      = new Translator('xx', 'en');
         $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
         $loader->loadAll($t);
         $t->setLocale('xx'); // język który nie istnieje
@@ -67,7 +67,7 @@ class TranslatorTest extends TestCase
 
     public function testInvokeAlias(): void
     {
-        $direct = $this->translator->trans('errors.internal_error');
+        $direct    = $this->translator->trans('errors.internal_error');
         $viaInvoke = ($this->translator)('errors.internal_error');
         $this->assertSame($direct, $viaInvoke);
     }

@@ -76,7 +76,7 @@ try {
         modelMap:      $modelMap,
         modelPriority: $priority,
         googleEnabled: ($_ENV['GOOGLE_VISION_ENABLED'] ?? 'false') === 'true',
-        googleApiKey:  $_ENV['GOOGLE_API_KEY'] ?? null,
+        googleCredentialsPath: $_ENV['GOOGLE_APPLICATION_CREDENTIALS'] ?? null,
     );
 
     echo "Strategia: " . implode(' -> ', $client->getStrategy()) . "\n\n";

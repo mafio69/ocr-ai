@@ -2,8 +2,8 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
 use OvhOcr\Error\ErrorResponse;
+use PHPUnit\Framework\TestCase;
 
 class ErrorResponseTest extends TestCase
 {
@@ -12,9 +12,9 @@ class ErrorResponseTest extends TestCase
         $response = new ErrorResponse(
             userMessage: 'Google API error',
             internalMessage: 'Technical details',
-            code: 'GOOGLE_API_ERROR'
+            code: 'GOOGLE_API_ERROR',
         );
-        
+
         $this->assertSame(502, $response->getHttpStatusCode());
     }
 
@@ -23,9 +23,9 @@ class ErrorResponseTest extends TestCase
         $response = new ErrorResponse(
             userMessage: 'OCR error',
             internalMessage: 'Technical details',
-            code: 'OCR_ERROR'
+            code: 'OCR_ERROR',
         );
-        
+
         $this->assertSame(422, $response->getHttpStatusCode());
     }
 
@@ -34,9 +34,9 @@ class ErrorResponseTest extends TestCase
         $response = new ErrorResponse(
             userMessage: 'File not found',
             internalMessage: 'Technical details',
-            code: 'FILE_NOT_FOUND'
+            code: 'FILE_NOT_FOUND',
         );
-        
+
         $this->assertSame(404, $response->getHttpStatusCode());
     }
 
@@ -45,9 +45,9 @@ class ErrorResponseTest extends TestCase
         $response = new ErrorResponse(
             userMessage: 'Unauthorized',
             internalMessage: 'Technical details',
-            code: 'UNAUTHORIZED'
+            code: 'UNAUTHORIZED',
         );
-        
+
         $this->assertSame(401, $response->getHttpStatusCode());
     }
 
@@ -56,9 +56,9 @@ class ErrorResponseTest extends TestCase
         $response = new ErrorResponse(
             userMessage: 'Unknown error',
             internalMessage: 'Technical details',
-            code: 'UNKNOWN_ERROR'
+            code: 'UNKNOWN_ERROR',
         );
-        
+
         $this->assertSame(500, $response->getHttpStatusCode());
     }
 
@@ -66,9 +66,9 @@ class ErrorResponseTest extends TestCase
     {
         $response = new ErrorResponse(
             userMessage: 'Error',
-            internalMessage: 'Technical details'
+            internalMessage: 'Technical details',
         );
-        
+
         $this->assertSame(500, $response->getHttpStatusCode());
     }
 
@@ -77,9 +77,9 @@ class ErrorResponseTest extends TestCase
         $response = new ErrorResponse(
             userMessage: 'User friendly message',
             internalMessage: 'Technical details',
-            code: 'OCR_ERROR'
+            code: 'OCR_ERROR',
         );
-        
+
         $this->assertSame('User friendly message', $response->getUserMessage());
     }
 
@@ -89,11 +89,11 @@ class ErrorResponseTest extends TestCase
             userMessage: 'User message',
             internalMessage: 'Internal message',
             context: ['key' => 'value'],
-            code: 'OCR_ERROR'
+            code: 'OCR_ERROR',
         );
-        
+
         $debugInfo = $response->getDebugInfo();
-        
+
         $this->assertSame('User message', $debugInfo['userMessage']);
         $this->assertSame('Internal message', $debugInfo['internalMessage']);
         $this->assertSame('OCR_ERROR', $debugInfo['code']);
@@ -107,12 +107,12 @@ class ErrorResponseTest extends TestCase
             internalMessage: 'Internal message',
             context: ['key' => 'value'],
             code: 'OCR_ERROR',
-            isDevelopment: true
+            isDevelopment: true,
         );
-        
+
         $json = $response->toJson();
         $data = json_decode($json, true);
-        
+
         $this->assertFalse($data['success']);
         $this->assertSame('User message', $data['error']['message']);
         $this->assertSame('OCR_ERROR', $data['error']['code']);
@@ -127,12 +127,12 @@ class ErrorResponseTest extends TestCase
             internalMessage: 'Internal message',
             context: ['key' => 'value'],
             code: 'OCR_ERROR',
-            isDevelopment: false
+            isDevelopment: false,
         );
-        
+
         $json = $response->toJson();
         $data = json_decode($json, true);
-        
+
         $this->assertFalse($data['success']);
         $this->assertSame('User message', $data['error']['message']);
         $this->assertSame('OCR_ERROR', $data['error']['code']);

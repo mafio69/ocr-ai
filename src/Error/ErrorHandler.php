@@ -16,8 +16,8 @@ class ErrorHandler
 
     public function __construct(Logger $logger, Translator $translator, bool $isDevelopment = false)
     {
-        $this->logger = $logger;
-        $this->translator = $translator;
+        $this->logger        = $logger;
+        $this->translator    = $translator;
         $this->isDevelopment = $isDevelopment;
     }
 
@@ -44,24 +44,24 @@ class ErrorHandler
             internalMessage: $e->getMessage(),
             context: $e->getContext(),
             code: $errorCode,
-            isDevelopment: $this->isDevelopment
+            isDevelopment: $this->isDevelopment,
         );
     }
 
     private function mapUserMessageKeyToErrorCode(?string $userMessageKey): string
     {
         return match ($userMessageKey) {
-            'errors.google_api_error' => 'GOOGLE_API_ERROR',
+            'errors.google_api_error'      => 'GOOGLE_API_ERROR',
             'errors.google_not_configured' => 'GOOGLE_API_ERROR',
-            'errors.file_not_found' => 'FILE_NOT_FOUND',
-            'errors.unauthorized' => 'UNAUTHORIZED',
-            default => 'OCR_ERROR',
+            'errors.file_not_found'        => 'FILE_NOT_FOUND',
+            'errors.unauthorized'          => 'UNAUTHORIZED',
+            default                        => 'OCR_ERROR',
         };
     }
 
     private function handleGenericException(Throwable $e): ErrorResponse
     {
-        $userMessage = $this->isDevelopment 
+        $userMessage = $this->isDevelopment
             ? $e->getMessage()
             : $this->getTranslatedOrFallback('errors.unexpected_error', 'An unexpected error occurred');
 
@@ -69,13 +69,14 @@ class ErrorHandler
             userMessage: $userMessage,
             internalMessage: $e->getMessage(),
             code: 'INTERNAL_ERROR',
-            isDevelopment: $this->isDevelopment
+            isDevelopment: $this->isDevelopment,
         );
     }
 
     private function getTranslatedOrFallback(string $key, string $fallback): string
     {
         $translated = $this->translator->trans($key);
+
         return $translated !== $key ? $translated : $fallback;
     }
 
@@ -85,10 +86,10 @@ class ErrorHandler
             message: $exception->getMessage(),
             context: [
                 'exception' => get_class($exception),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-                'trace' => $exception->getTraceAsString(),
-            ]
+                'file'      => $exception->getFile(),
+                'line'      => $exception->getLine(),
+                'trace'     => $exception->getTraceAsString(),
+            ],
         );
     }
 }

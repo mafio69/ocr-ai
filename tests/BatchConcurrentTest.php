@@ -2,17 +2,17 @@
 
 namespace OvhOcr\Tests;
 
-use PHPUnit\Framework\TestCase;
-use OvhOcr\OcrClient;
-use OvhOcr\Logging\Logger;
-use OvhOcr\i18n\Translator;
-use OvhOcr\i18n\LocaleLoader;
-use OvhOcr\Response\OcrResponse;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Response;
+use OvhOcr\i18n\LocaleLoader;
+use OvhOcr\i18n\Translator;
+use OvhOcr\Logging\Logger;
+use OvhOcr\OcrClient;
+use OvhOcr\Response\OcrResponse;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Audit #16: extractTextBatchConcurrent() sends the first model-tier attempt for every
@@ -31,9 +31,9 @@ class BatchConcurrentTest extends TestCase
         $this->tempDir = sys_get_temp_dir() . '/ocr_batch_concurrent_test_' . uniqid();
         mkdir($this->tempDir, 0755, true);
 
-        $this->logger = new Logger($this->tempDir . '/test.log', true);
+        $this->logger     = new Logger($this->tempDir . '/test.log', true);
         $this->translator = new Translator('pl', 'en');
-        $loader = new LocaleLoader(__DIR__ . '/../resources/locales');
+        $loader           = new LocaleLoader(__DIR__ . '/../resources/locales');
         $loader->loadAll($this->translator);
         $this->requestHistory = [];
     }
@@ -60,21 +60,22 @@ class BatchConcurrentTest extends TestCase
     private function createTestImage(string $filename): string
     {
         $imagePath = $this->tempDir . '/' . $filename;
-        $image = imagecreatetruecolor(10, 10);
+        $image     = imagecreatetruecolor(10, 10);
         imagejpeg($image, $imagePath);
+
         return $imagePath;
     }
 
     private function makeClient(array $responses, array $extraArgs = []): OcrClient
     {
-        $mock = new MockHandler($responses);
+        $mock         = new MockHandler($responses);
         $handlerStack = HandlerStack::create($mock);
         $handlerStack->push(Middleware::history($this->requestHistory));
         $customClient = new Client(['handler' => $handlerStack]);
 
         $args = array_merge([
-            'apiKey' => 'test-key',
-            'logger' => $this->logger,
+            'apiKey'     => 'test-key',
+            'logger'     => $this->logger,
             'translator' => $this->translator,
             'httpClient' => $customClient,
         ], $extraArgs);
@@ -90,7 +91,7 @@ class BatchConcurrentTest extends TestCase
                 new Response(200, [], json_encode(['choices' => [['message' => ['content' => 'Text B']]]])),
                 new Response(200, [], json_encode(['choices' => [['message' => ['content' => 'Text C']]]])),
             ],
-            ['modelMap' => ['lite' => 'TestModel'], 'modelPriority' => ['lite']]
+            ['modelMap' => ['lite' => 'TestModel'], 'modelPriority' => ['lite']],
         );
 
         $paths = [
@@ -120,7 +121,7 @@ class BatchConcurrentTest extends TestCase
                 // ...then falls through to "medium", which succeeds.
                 new Response(200, [], json_encode(['choices' => [['message' => ['content' => 'Recovered text']]]])),
             ],
-            ['modelMap' => ['lite' => 'Lite', 'medium' => 'Medium'], 'modelPriority' => ['lite', 'medium']]
+            ['modelMap' => ['lite' => 'Lite', 'medium' => 'Medium'], 'modelPriority' => ['lite', 'medium']],
         );
 
         $path = $this->createTestImage('needs-fallback.jpg');
@@ -148,7 +149,7 @@ class BatchConcurrentTest extends TestCase
     public function testEmptyModelStrategyDelegatesToSequentialBatch(): void
     {
         $client = $this->makeClient([], ['modelMap' => [], 'modelPriority' => []]);
-        $path = $this->createTestImage('no-strategy.jpg');
+        $path   = $this->createTestImage('no-strategy.jpg');
 
         $results = $client->extractTextBatchConcurrent([$path]);
 

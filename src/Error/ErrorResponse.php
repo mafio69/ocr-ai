@@ -16,13 +16,13 @@ class ErrorResponse
         string $internalMessage,
         array $context = [],
         string $code = 'ERROR',
-        bool $isDevelopment = false
+        bool $isDevelopment = false,
     ) {
-        $this->userMessage = $userMessage;
+        $this->userMessage     = $userMessage;
         $this->internalMessage = $internalMessage;
-        $this->context = $context;
-        $this->code = $code;
-        $this->isDevelopment = $isDevelopment;
+        $this->context         = $context;
+        $this->code            = $code;
+        $this->isDevelopment   = $isDevelopment;
     }
 
     /**
@@ -32,15 +32,15 @@ class ErrorResponse
     {
         $response = [
             'success' => false,
-            'error' => [
+            'error'   => [
                 'message' => $this->userMessage,
-                'code' => $this->code,
+                'code'    => $this->code,
             ],
         ];
 
         if ($this->isDevelopment) {
             $response['error']['internal'] = $this->internalMessage;
-            $response['error']['context'] = $this->context;
+            $response['error']['context']  = $this->context;
         }
 
         return json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
@@ -60,10 +60,10 @@ class ErrorResponse
     public function getDebugInfo(): array
     {
         return [
-            'userMessage' => $this->userMessage,
+            'userMessage'     => $this->userMessage,
             'internalMessage' => $this->internalMessage,
-            'code' => $this->code,
-            'context' => $this->context,
+            'code'            => $this->code,
+            'context'         => $this->context,
         ];
     }
 
@@ -71,10 +71,10 @@ class ErrorResponse
     {
         return match ($this->code) {
             'GOOGLE_API_ERROR' => 502,
-            'OCR_ERROR' => 422,
-            'FILE_NOT_FOUND' => 404,
-            'UNAUTHORIZED' => 401,
-            default => 500,
+            'OCR_ERROR'        => 422,
+            'FILE_NOT_FOUND'   => 404,
+            'UNAUTHORIZED'     => 401,
+            default            => 500,
         };
     }
 }
