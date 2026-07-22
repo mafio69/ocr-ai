@@ -41,12 +41,90 @@ class SearchablePdfWriter
             );
         }
 
-        $imageSize = @getimagesize($imagePath);
-        if ($imageSize === false || $imageSize[0] <= 0 || $imageSize[1] <= 0) {
-            throw new RuntimeException("Could not read image dimensions: {$imagePath}");
+        // Telefony zapisuja pionowe zdjecia z pikselami LEZACYMI POZIOMO + flaga EXIF
+        // Orientation mowiaca viewerowi "obroc przed wyswietleniem". getimagesize()/
+        // Mpdf::Image() ignoruja te flage, wiec bez tej korekty finalny PDF ma obrazek
+        // na boku (zgloszone przez uzytkownika 2026-07-22, patrz przykladowy skan
+        // zaswiadczenia lekarskiego). Zwraca sciezke do POPRAWIONEJ kopii (albo
+        // oryginalna sciezke, jesli korekta nie byla potrzebna/mozliwa).
+        [$normalizedPath, $tempCopy] = $this->normalizeOrientation($imagePath);
+
+        try {
+            $imageSize = @getimagesize($normalizedPath);
+            if ($imageSize === false || $imageSize[0] <= 0 || $imageSize[1] <= 0) {
+                throw new RuntimeException("Could not read image dimensions: {$imagePath}");
+            }
+
+            [$widthPx, $heightPx] = $imageSize;
+            $this->render($normalizedPath, $widthPx, $heightPx, $extractedText, $outputPath);
+        } finally {
+            if ($tempCopy !== null && is_file($tempCopy)) {
+                @unlink($tempCopy);
+            }
+        }
+    }
+
+    /**
+     * Czyta flage EXIF "Orientation" (tylko JPEG realnie ja niesie) i jesli obraz wymaga
+     * obrotu, fizycznie go obraca (GD) do tymczasowej kopii PNG. Zwraca [sciezka_do_uzycia,
+     * sciezka_tymczasowa_do_posprzatania_albo_null].
+     *
+     * @return array{0: string, 1: ?string}
+     */
+    private function normalizeOrientation(string $imagePath): array
+    {
+        if (!function_exists('exif_read_data') || !function_exists('imagerotate')) {
+            return [$imagePath, null];
         }
 
-        [$widthPx, $heightPx] = $imageSize;
+        $exif = @exif_read_data($imagePath);
+        $orientation = is_array($exif) ? ($exif['Orientation'] ?? 1) : 1;
+
+        // 1 = normalna orientacja, nic do zrobienia. 2/4/5/7 (lustrzane odbicia) celowo
+        // nieobslugiwane - w praktyce telefony generuja niemal wylacznie 1/3/6/8.
+        if (!in_array($orientation, [3, 6, 8], true)) {
+            return [$imagePath, null];
+        }
+
+        $rawContents = @file_get_contents($imagePath);
+        if ($rawContents === false) {
+            return [$imagePath, null];
+        }
+
+        $image = @imagecreatefromstring($rawContents);
+        if ($image === false) {
+            return [$imagePath, null];
+        }
+
+        $angle = match ($orientation) {
+            3 => 180,
+            6 => -90,
+            8 => 90,
+            default => 0,
+        };
+
+        $rotated = imagerotate($image, $angle, 0);
+        imagedestroy($image);
+
+        if ($rotated === false) {
+            return [$imagePath, null];
+        }
+
+        $tmpPath = tempnam(sys_get_temp_dir(), 'ocr_exif_fix_') . '.png';
+        $written = imagepng($rotated, $tmpPath);
+        imagedestroy($rotated);
+
+        if (!$written) {
+            @unlink($tmpPath);
+
+            return [$imagePath, null];
+        }
+
+        return [$tmpPath, $tmpPath];
+    }
+
+    private function render(string $imagePath, int $widthPx, int $heightPx, string $extractedText, string $outputPath): void
+    {
 
         // mPDF works in mm; treat the image as self::DPI dots per inch to size the PDF
         // page to the image's exact aspect ratio (matches how most tools interpret
