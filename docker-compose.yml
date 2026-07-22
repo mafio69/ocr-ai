@@ -10,8 +10,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    cap_add:
-      - NET_RAW
+    environment:
+      HTTP_PROXY: "http://egress-proxy:3128"
+      HTTPS_PROXY: "http://egress-proxy:3128"
+      http_proxy: "http://egress-proxy:3128"
+      https_proxy: "http://egress-proxy:3128"
+      NO_PROXY: "localhost,127.0.0.1,db,redis,nginx,app,host.docker.internal"
+      no_proxy: "localhost,127.0.0.1,db,redis,nginx,app,host.docker.internal"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -29,6 +34,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      egress-proxy:
+        condition: service_started
 
   nginx:
     image: nginx:alpine
@@ -40,9 +47,22 @@ services:
     networks:
       - frontend-net
       - backend-net
+      - publish-net
     restart: unless-stopped
     depends_on:
       - app
+
+  egress-proxy:
+    build:
+      context: ./.devcontainer/egress-proxy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - frontend-net
+      - egress-net
+    restart: unless-stopped
 
   db:
     image: postgres:17-alpine
@@ -72,10 +92,10 @@ services:
       - backend-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 10
-      start_period: 5s
+      start_period: 20s
 
 volumes:
   developer_home:
@@ -88,6 +108,16 @@ secrets:
 networks:
   frontend-net:
     driver: bridge
+    internal: true
   backend-net:
     driver: bridge
     internal: true
+  egress-net:
+    driver: bridge
+  # Nie-internal wylacznie po to, by Docker mogl zpublikowac port 8082->80 na hosta
+  # (internal:true na frontend-net blokuje publikowanie portow calkowicie). Uzywana
+  # TYLKO przez nginx - nginx nie trzyma sekretow ani nie uruchamia agentow AI, wiec
+  # posiadanie przez niego trasy do WAN nie otwiera z powrotem ryzyka, przed ktorym
+  # chronimy `app` (ktory na ta siec NIE jest podpiety).
+  publish-net:
+    driver: bridge

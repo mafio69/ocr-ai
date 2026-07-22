@@ -42,10 +42,15 @@ Thumbs.db
 /tests/img-to-test/
 
 # Claude Code local tool settings (machine-specific, not project config)
-.claude/
+# - settings.json IS tracked: project-wide permission/deny rules, see /.claude/settings.json
+.claude/*
+!.claude/settings.json
 
 # Lokalny scratch + WSZYSTKIE sekrety (klucze Google SA) - nigdy do repo
 /.local/
 mariusz-nauka-*.json
 /docs/devbrain.db
 /.local/
+
+# Docker secrets (dev-only bait password, but still never commit the value)
+/secrets/
