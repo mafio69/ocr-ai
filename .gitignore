@@ -2,6 +2,13 @@
 /vendor/
 composer.lock
 
+# Restrukturyzacja "workspace/" (wip/workspace-restructure) - ma zyc na swoim branchu,
+# nie mieszac sie z innymi (np. fix/*). Tu byla /vendor/ zakotwiczone tylko do roota,
+# wiec nie lapalo zagniezdzonego workspace/vendor/ - stad przypadkowe git add -A na
+# 5000+ plikow (w tym realna baza workspace/docs/devbrain.db i prywatne zdjecia
+# z workspace/tests/img-to-test/). 2026-07-22.
+/workspace/
+
 # IDE
 .idea/
 .vscode/
@@ -49,3 +56,4 @@ Thumbs.db
 mariusz-nauka-*.json
 /docs/devbrain.db
 /.local/
+/img.png
