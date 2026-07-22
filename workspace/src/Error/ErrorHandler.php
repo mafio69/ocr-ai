@@ -51,11 +51,10 @@ class ErrorHandler
     private function mapUserMessageKeyToErrorCode(?string $userMessageKey): string
     {
         return match ($userMessageKey) {
-            'errors.google_api_error'      => 'GOOGLE_API_ERROR',
-            'errors.google_not_configured' => 'GOOGLE_API_ERROR',
-            'errors.file_not_found'        => 'FILE_NOT_FOUND',
-            'errors.unauthorized'          => 'UNAUTHORIZED',
-            default                        => 'OCR_ERROR',
+            'errors.google_api_error', 'errors.google_not_configured' => 'GOOGLE_API_ERROR',
+            'errors.file_not_found'                                   => 'FILE_NOT_FOUND',
+            'errors.unauthorized'                                     => 'UNAUTHORIZED',
+            default                                                   => 'OCR_ERROR',
         };
     }
 
