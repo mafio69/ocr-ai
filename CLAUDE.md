@@ -24,8 +24,19 @@ ocr-ai/                      # repo root: container/infra layer only
 ```
 
 **Always `cd workspace` before running composer/phpunit/php-cs-fixer/phpstan commands** — the
-root has a stray `composer.lock` and `.php-cs-fixer.cache` left over from the move but no
-`composer.json`, `src/`, or `vendor/` of its own.
+root has a stray `composer.lock` and `.php-cs-fixer.cache` left over from the move and no `src/`
+or `vendor/` of its own.
+
+There **is** a `composer.json` at the repo root, but it is a thin shim, not a real second copy of
+the library's tooling config: it exists only so external projects (e.g. `devbrain`'s
+`"mafio69/ovh-ocr": "dev-master"` VCS dependency) can `composer require`/`update` this repo at all
+— Composer's git/VCS downloader always reads `composer.json` from the root of the fetched ref, so
+without this file the restructure to `workspace/` silently broke consumability as a dependency
+(discovered 2026-07-23 while wiring `ImagePreprocessor` into devbrain). Its `autoload.psr-4` maps
+`OvhOcr\` to `workspace/src/` (paths in a `composer.json` resolve relative to that file's own
+location, so this works even though the file itself lives at repo root). **If you change
+`require`, `suggest`, or the package name/license in `workspace/composer.json`, mirror the same
+change in the root shim** — there's no tooling enforcing this sync yet.
 
 The root `.github/workflows/ci.yml` still runs `composer install`, `scripts/secret-guard.sh`,
 etc. against the repo root — those paths currently only exist under `workspace/`, so CI as

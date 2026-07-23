@@ -1,0 +1,39 @@
+{
+  "name": "mafio69/ovh-ocr",
+  "description": "PHP library for extracting text from images - Visual LLM (OVH AI Endpoints) with optional fallback to Google Vision. Support PL/EN.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "mafio69",
+      "email": "your-email@example.com"
+    }
+  ],
+  "require": {
+    "php": "^8.1",
+    "guzzlehttp/guzzle": "^7.5",
+    "psr/log": "^3.0",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "ext-fileinfo": "*",
+    "google/auth": "^1.52"
+  },
+  "suggest": {
+    "vlucas/phpdotenv": "To load configurations from an .env file in applications",
+    "mpdf/mpdf": "To enable OcrClient::extractTextAsSearchablePdf() / SearchablePdfWriter (searchable PDF export) - not required for plain text extraction",
+    "ext-exif": "To auto-correct JPEG EXIF orientation in SearchablePdfWriter (phone photos otherwise embed sideways) - gracefully skipped if missing",
+    "ext-gd": "To physically rotate images per EXIF orientation in SearchablePdfWriter, and to resize oversized images in ImagePreprocessor - gracefully skipped if missing (resize is skipped, original size kept)",
+    "ext-imagick": "To decode HEIC/HEIF (iPhone default photo format) in ImagePreprocessor - built with --with-heic/libheif support. Required (hard failure, not graceful) only when a HEIC/HEIF file is actually passed in."
+  },
+  "autoload": {
+    "psr-4": {
+      "OvhOcr\\": "workspace/src/"
+    }
+  },
+  "minimum-stability": "stable",
+  "homepage": "https://github.com/mafio69/ovh-ocr",
+  "support": {
+    "issues": "https://github.com/mafio69/ovh-ocr/issues",
+    "source": "https://github.com/mafio69/ovh-ocr"
+  }
+}
