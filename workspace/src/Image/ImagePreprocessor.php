@@ -130,8 +130,8 @@ final class ImagePreprocessor
             throw new RuntimeException('Nie mozna zdekodowac obrazu do zmiany rozmiaru.');
         }
 
-        $scale = $this->maxDimension / max($width, $height);
-        $newWidth = max(1, (int) round($width * $scale));
+        $scale     = $this->maxDimension / max($width, $height);
+        $newWidth  = max(1, (int) round($width * $scale));
         $newHeight = max(1, (int) round($height * $scale));
 
         $resized = imagecreatetruecolor($newWidth, $newHeight);
@@ -157,10 +157,10 @@ final class ImagePreprocessor
     {
         ob_start();
         $ok = match ($mimeType) {
-            'image/png' => imagepng($image, null, 6),
-            'image/gif' => imagegif($image),
+            'image/png'  => imagepng($image, null, 6),
+            'image/gif'  => imagegif($image),
             'image/webp' => function_exists('imagewebp') ? imagewebp($image, null, 90) : imagejpeg($image, null, 90),
-            default => imagejpeg($image, null, 90),
+            default      => imagejpeg($image, null, 90),
         };
         $data = ob_get_clean();
 
