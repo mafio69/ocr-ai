@@ -135,6 +135,8 @@ class SearchablePdfWriterTest extends TestCase
     public function testRotatesImagePerExifOrientationBeforeEmbedding(): void
     {
         if (!function_exists('exif_read_data') || !function_exists('imagerotate')) {
+            // trivial-check-allow: warunkowy skip zalezny od srodowiska (ext-exif/ext-gd
+            // sa suggested, nie hard, dependency - patrz composer.json) - nie lazy/staly skip.
             $this->markTestSkipped('ext-exif / ext-gd (imagerotate) niedostepne w tym srodowisku.');
         }
 
