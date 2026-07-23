@@ -174,7 +174,12 @@ class Logger implements LoggerInterface
 
         try {
             $buffer = '';
-            $pos    = filesize($filePath);
+            // clearstatcache jest tu konieczny: writeLine()/rotateIfNeeded() wololy juz
+            // filesize() na tej samej sciezce PRZED ostatnim dopisaniem (file_put_contents),
+            // wiec bez wyczyszczenia cache PHP potrafi zwrocic rozmiar sprzed ostatniego
+            // zapisu i tail() gubi ostatnia linie (zaobserwowane jako flaky testy w CI).
+            clearstatcache(true, $filePath);
+            $pos = filesize($filePath);
 
             while ($pos > 0 && substr_count($buffer, "\n") <= $maxLines) {
                 $readSize = min(self::TAIL_CHUNK_SIZE, $pos);
