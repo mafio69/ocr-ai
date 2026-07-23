@@ -23,7 +23,7 @@ class ImagePreprocessorTest extends TestCase
     public function testSmallImagePassesThroughUnchanged(): void
     {
         $preprocessor = new ImagePreprocessor(1600);
-        $original = $this->pngBytes(200, 100);
+        $original     = $this->pngBytes(200, 100);
 
         $result = $preprocessor->normalize($original);
 
@@ -49,7 +49,7 @@ class ImagePreprocessorTest extends TestCase
     public function testExactlyAtLimitIsNotResized(): void
     {
         $preprocessor = new ImagePreprocessor(200);
-        $original = $this->pngBytes(200, 150);
+        $original     = $this->pngBytes(200, 150);
 
         $result = $preprocessor->normalize($original);
 
