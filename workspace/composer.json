@@ -31,7 +31,8 @@
     "vlucas/phpdotenv": "To load configurations from an .env file in applications",
     "mpdf/mpdf": "To enable OcrClient::extractTextAsSearchablePdf() / SearchablePdfWriter (searchable PDF export) - not required for plain text extraction",
     "ext-exif": "To auto-correct JPEG EXIF orientation in SearchablePdfWriter (phone photos otherwise embed sideways) - gracefully skipped if missing",
-    "ext-gd": "To physically rotate images per EXIF orientation in SearchablePdfWriter - gracefully skipped if missing"
+    "ext-gd": "To physically rotate images per EXIF orientation in SearchablePdfWriter, and to resize oversized images in ImagePreprocessor - gracefully skipped if missing (resize is skipped, original size kept)",
+    "ext-imagick": "To decode HEIC/HEIF (iPhone default photo format) in ImagePreprocessor - built with --with-heic/libheif support. Required (hard failure, not graceful) only when a HEIC/HEIF file is actually passed in."
   },
   "autoload": {
     "psr-4": {

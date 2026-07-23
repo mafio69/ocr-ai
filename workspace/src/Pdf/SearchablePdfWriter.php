@@ -77,7 +77,7 @@ class SearchablePdfWriter
             return [$imagePath, null];
         }
 
-        $exif = @exif_read_data($imagePath);
+        $exif        = @exif_read_data($imagePath);
         $orientation = is_array($exif) ? ($exif['Orientation'] ?? 1) : 1;
 
         // 1 = normalna orientacja, nic do zrobienia. 2/4/5/7 (lustrzane odbicia) celowo
@@ -97,9 +97,9 @@ class SearchablePdfWriter
         }
 
         $angle = match ($orientation) {
-            3 => 180,
-            6 => -90,
-            8 => 90,
+            3       => 180,
+            6       => -90,
+            8       => 90,
             default => 0,
         };
 
