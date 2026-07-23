@@ -10,6 +10,16 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      # Wymagane przez JetBrains Gateway (remoteUser: root - patrz .devcontainer/php/devcontainer.json):
+      # Gateway tworzy /.jbdevcontainer i chmod-uje pliki bind-mountowane z hosta (np. .idea,
+      # wlasciciel = host UID, nie 0), co bez CAP_FOWNER/CAP_CHOWN konczy sie "Operation not
+      # permitted" nawet dla roota - cap_drop:ALL zdejmuje te uprawnienia tez rootowi, nie tylko
+      # zwyklym userom. Dziala TYLKO bo remoteUser=root: dla non-root procesu (developer) Docker
+      # nie przenosi cap_add do efektywnego zestawu w ogole (zweryfikowane empirycznie), wiec
+      # kolejnosc (root + te dwie capabilities) ma znaczenie, nie jest przypadkowa.
+      - CHOWN
+      - FOWNER
     environment:
       HTTP_PROXY: "http://egress-proxy:3128"
       HTTPS_PROXY: "http://egress-proxy:3128"

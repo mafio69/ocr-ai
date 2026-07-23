@@ -1,9 +1,9 @@
 {
   "name": "php-devcontainer-starter",
-  "dockerComposeFile": "../docker-compose.yml",
+  "dockerComposeFile": "../../docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
-  "remoteUser": "developer",
+  "remoteUser": "root",
   "customizations": {
     "jetbrains": {
       "backend": "PhpStorm",
