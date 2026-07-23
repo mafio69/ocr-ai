@@ -96,13 +96,11 @@ class SearchablePdfWriter
             return [$imagePath, null];
         }
 
-        // Bez "default": $orientation jest tu juz zawezone do {3, 6, 8} przez powyzszy
-        // in_array() (PHPStan slusznie oznaczylby domyslna galaz jako martwy kod - nigdy
-        // nieosiagalna).
         $angle = match ($orientation) {
-            3 => 180,
-            6 => -90,
-            8 => 90,
+            3       => 180,
+            6       => -90,
+            8       => 90,
+            default => 0,
         };
 
         $rotated = imagerotate($image, $angle, 0);

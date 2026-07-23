@@ -18,13 +18,10 @@ profile:
 #  - name: <SomeEnabledInspectionId>
 
 #Disable inspections
-# PhpCSFixerValidationInspection is disabled at repo root: PHP CS Fixer looks for
-# composer.json/.php-cs-fixer.dist.php next to $PROJECT_DIR$, but this repo's actual PHP
-# project (and its own, correctly-scoped qodana.yaml) lives in workspace/, not at root -
-# see CLAUDE.md "Repo layout". Without this, every PHP file under workspace/ gets a false
-# HIGH-severity "config file not found" hit here instead of a real style check.
-exclude:
-  - name: PhpCSFixerValidationInspection
+#exclude:
+#  - name: <SomeDisabledInspectionId>
+#    paths:
+#      - <path/where/not/run/inspection>
 
 php:
   version: "8.1" #(Applied in CI/CD pipeline)
@@ -49,4 +46,4 @@ php:
 #    total: 50
 
 #Specify Qodana linter for analysis (Applied in CI/CD pipeline)
-linter: jetbrains/qodana-php:2026.2
+linter: jetbrains/qodana-php:2026.1

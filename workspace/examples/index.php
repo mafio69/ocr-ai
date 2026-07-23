@@ -154,12 +154,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['image'])) {
         (new SearchablePdfWriter())->write($uploadPath, $resultText, $outputDir . '/' . $pdfName);
         $pdfFile = $pdfName;
     } catch (OcrException $e) {
-        // $translator may not exist yet if the exception was thrown during upload/engine
-        // validation, before it gets constructed below - falls back to the untranslated
-        // message built into OcrException in that case (see getUserMessage()'s own default).
-        $error = $e->getUserMessage($translator);
+        // $translator/$logger may not exist yet if the exception was thrown during
+        // upload/engine validation, before they get constructed above - falls back to the
+        // untranslated message (see getUserMessage()'s own default) and error_log() in that
+        // case. getContext() carries the technical detail (model, HTTP status, etc.) that
+        // getUserMessage() deliberately leaves out - log it, don't drop it on the floor.
+        $error = $e->getUserMessage($translator ?? null);
+        if (isset($logger)) {
+            $logger->error($e->getMessage(), $e->getContext());
+        } else {
+            error_log('[web-test] ' . OcrException::class . ': ' . $e->getMessage());
+        }
     } catch (\Throwable $e) {
-        $error = $e->getMessage();
+        // Never echo raw exception messages to the browser (CWE-209 - they can carry
+        // internal paths/details, e.g. the Google credentials path check above). Log the
+        // real message server-side (same log file as the rest of the app, when available),
+        // show a generic one to the user.
+        if (isset($logger)) {
+            $logger->error(get_class($e) . ': ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+        } else {
+            error_log('[web-test] ' . get_class($e) . ': ' . $e->getMessage());
+        }
+        $error = 'Wystąpił nieoczekiwany błąd. Szczegóły w logu serwera.';
     } finally {
         if ($uploadPath !== null && is_file($uploadPath)) {
             @unlink($uploadPath); // raw upload isn't needed once OCR + PDF are done

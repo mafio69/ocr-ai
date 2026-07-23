@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(/.env)",
+      "Read(/**/.env)",
+      "Read(/**/.env.*)",
+      "Read(/secrets/**)",
+      "Edit(/.env)",
+      "Edit(/**/.env)",
+      "Edit(/**/.env.*)",
+      "Edit(/secrets/**)",
+      "Bash(grep * .env*)",
+      "Bash(grep * secrets/*)",
+      "Bash(less .env*)",
+      "Bash(more .env*)",
+      "Bash(strings .env*)",
+      "Bash(od * .env*)",
+      "Bash(xxd .env*)",
+      "Bash(base64 .env*)"
+    ]
+  }
+}

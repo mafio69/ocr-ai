@@ -1,26 +1,29 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/php
 {
-	"name": "PHP",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mafio69/php-env:8.4-fpm-alpine",
-
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
-	// Configure tool-specific properties.
-
-  "customizations" : {
-    "jetbrains" : {
-      "backend" : "PhpStorm"
+  "name": "php-devcontainer-starter",
+  "dockerComposeFile": "../../docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "root",
+  "customizations": {
+    "jetbrains": {
+      "backend": "PhpStorm",
+      "settings": {
+        "Git4Idea:app:Git-Application-Settings.myPathToGit": "/usr/bin/git",
+        "Git4Idea:app:Git-Application-Settings.staging_area_enabled": true,
+        "com.intellij:app:HttpConfigurable.use_proxy_pac": true,
+        "com.intellij:app:VcsApplicationSettings.create_changelists_automatically": true,
+        "com.intellij:app:ProjectViewSharedSettings.showMembers": true,
+        "com.intellij:app:BaseRefactoringSettings.safe_delete_when_delete": false,
+        "com.intellij:app:BaseRefactoringSettings.rename_search_in_comments_for_file": false,
+        "com.intellij:app:BaseRefactoringSettings.rename_search_for_references_for_file": false,
+        "com.intellij:app:BaseRefactoringSettings.move_search_for_references_for_file": false
+      },
+      "plugins": [
+        "com.jetbrains.php",
+        "com.jetbrains.twig",
+        "org.jetbrains.plugins.yaml",
+        "ru.adelf.idea.dotenv"
+      ]
     }
-  },
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [9999],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "sudo chmod a+x \"$(pwd)\" && sudo rm -rf /var/www/html && sudo ln -s \"$(pwd)\" /var/www/html"
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  }
 }
