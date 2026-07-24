@@ -18,6 +18,15 @@
     "ext-fileinfo": "*",
     "google/auth": "^1.52"
   },
+  "require-dev": {
+    "phpunit/phpunit": "^10.0",
+    "vlucas/phpdotenv": "^5.5",
+    "mpdf/mpdf": "^8.2",
+    "smalot/pdfparser": "^2.9",
+    "friendsofphp/php-cs-fixer": "3.95.15",
+    "phpstan/phpstan": "^1.10",
+    "phpro/grumphp": "^2.0"
+  },
   "suggest": {
     "vlucas/phpdotenv": "To load configurations from an .env file in applications",
     "mpdf/mpdf": "To enable OcrClient::extractTextAsSearchablePdf() / SearchablePdfWriter (searchable PDF export) - not required for plain text extraction",
@@ -27,13 +36,60 @@
   },
   "autoload": {
     "psr-4": {
-      "OvhOcr\\": "workspace/src/"
+      "OvhOcr\\": "src/"
     }
   },
-  "minimum-stability": "stable",
+  "autoload-dev": {
+    "psr-4": {
+      "OvhOcr\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": [
+      "@check:asserts",
+      "@test:phpunit"
+    ],
+    "check:asserts": "bash scripts/check-trivial-asserts.sh tests",
+    "test:phpunit": "phpunit --colors=always",
+    "test-coverage": "phpunit --coverage-text",
+    "cs-fix": "php-cs-fixer fix --verbose",
+    "cs-check": "php-cs-fixer fix --dry-run --diff",
+    "audit": "composer audit",
+    "all-checks": [
+      "@cs-check",
+      "@audit",
+      "@test"
+    ]
+  },
+  "scripts-descriptions": {
+    "test": "All tests: trivial-assertion gate + PHPUnit",
+    "check:asserts": "Scans tests/ for trivial assertions (blocks if found)",
+    "test:phpunit": "PHPUnit only",
+    "cs-fix": "Fix code style with php-cs-fixer",
+    "cs-check": "Check code style without fixing",
+    "audit": "Check for security vulnerabilities in dependencies",
+    "all-checks": "Run all checks: code style, audit, tests"
+  },
+  "keywords": [
+    "ocr",
+    "ovh",
+    "ai-endpoints",
+    "visual-llm",
+    "vision",
+    "text-extraction",
+    "image-to-text",
+    "multimodal",
+    "php"
+  ],
   "homepage": "https://github.com/mafio69/ovh-ocr",
   "support": {
     "issues": "https://github.com/mafio69/ovh-ocr/issues",
     "source": "https://github.com/mafio69/ovh-ocr"
+  },
+  "minimum-stability": "stable",
+  "config": {
+    "allow-plugins": {
+      "phpro/grumphp": true
+    }
   }
 }

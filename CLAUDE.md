@@ -2,141 +2,151 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repo layout (read this first)
+## Project Overview
 
-This repo is **mid-restructure** (see commit `cf69b53`, "przebudowa struktury repo do katalogu
-workspace/", task #89 — not yet reviewed/finalized). The actual PHP library — source, tests,
-composer.json, docs, CI configs referenced by scripts — now lives under **`workspace/`**, not at
-the repo root:
+**OVH OCR** is a PHP library for extracting text from images using Visual LLM models from OVH AI Endpoints (Qwen, Mistral). It features:
+- Multi-model fallback strategy with automatic retries (lite → medium → premium)
+- Optional fallback to Google Vision API
+- Internationalization support (Polish/English)
+- Comprehensive logging and structured error handling
+- Batch processing support
 
+The library is **not** traditional OCR like Tesseract—it uses multimodal LLMs that can understand context and handle distorted text but may hallucinate content.
+
+## Architecture
+
+### Core Components
+
+- **OcrClient** (`src/OcrClient.php`): Main entry point. Manages HTTP requests to OVH endpoints and Google Vision, handles retry strategy, orchestrates model fallback logic. Uses Guzzle for HTTP.
+- **OcrResponse** (`src/Response/OcrResponse.php`): Encapsulates extracted text and metadata (which model succeeded, lines, paragraphs, JSON/file export).
+- **OcrException** (`src/Exceptions/OcrException.php`): Custom exception with dual messaging (technical for logs, user-friendly translated messages for frontend).
+- **Logger** (`src/Logging/Logger.php`): Structured logging to file with context arrays.
+- **Translator** (`src/i18n/Translator.php`) + **LocaleLoader** (`src/i18n/LocaleLoader.php`): i18n system supporting PL/EN with JSON-based locale files in `resources/locales/`.
+- **ErrorHandler** + **ErrorResponse** (`src/Error/`): Parse error responses from OVH and Google Vision APIs into structured exceptions.
+
+### Model Strategy
+
+The client accepts `modelMap` (tier → model name) and `modelPriority` (order to try). Example:
+```php
+modelMap: ['lite' => 'Qwen3.5-9B', 'medium' => 'Mistral-Small-3.2-24B', 'premium' => 'Qwen3.6-27B']
+modelPriority: ['medium', 'premium', 'lite']
 ```
-ocr-ai/                      # repo root: container/infra layer only
-├── docker-compose.yml       # app + nginx + postgres + redis stack
-├── .devcontainer/           # Dockerfile, nginx.conf, php.ini, xdebug.ini
-├── secrets/                 # docker secrets (db_user_password.txt) — see Safety below
-├── postgres/init.sql
-├── public/                  # nginx web root (mounted read-only into the nginx service)
-└── workspace/                # <-- the actual OvhOcr PHP library; mounted as /workspace in the app container
-    ├── CLAUDE.md            # detailed architecture/commands doc for the library itself
-    ├── AGENTS.md            # safety rules for AI agents (secrets, permissions)
-    ├── composer.json / vendor/ / src/ / tests/ / docs/ / examples/
-    └── ...
+
+If a model fails (rate limit, timeout, etc.), the client retries the next one. If all fail, it throws `OcrException` with key `errors.all_models_failed`.
+
+### Request/Response Format
+
+OVH endpoint is OpenAI-compatible. Requests use `chat/completions` with multimodal content:
+```json
+{
+  "model": "Qwen3.5-9B",
+  "messages": [{
+    "role": "user",
+    "content": [
+      {"type": "text", "text": "Extract text from image"},
+      {"type": "image_url", "image_url": {"url": "data:image/png;base64,..."}}
+    ]
+  }]
+}
 ```
 
-**Always `cd workspace` before running composer/phpunit/php-cs-fixer/phpstan commands** — the
-root has a stray `composer.lock` and `.php-cs-fixer.cache` left over from the move and no `src/`
-or `vendor/` of its own.
+See `docs/OVH_ENDPOINTS.md` for full technical details.
 
-There **is** a `composer.json` at the repo root, but it is a thin shim, not a real second copy of
-the library's tooling config: it exists only so external projects (e.g. `devbrain`'s
-`"mafio69/ovh-ocr": "dev-master"` VCS dependency) can `composer require`/`update` this repo at all
-— Composer's git/VCS downloader always reads `composer.json` from the root of the fetched ref, so
-without this file the restructure to `workspace/` silently broke consumability as a dependency
-(discovered 2026-07-23 while wiring `ImagePreprocessor` into devbrain). Its `autoload.psr-4` maps
-`OvhOcr\` to `workspace/src/` (paths in a `composer.json` resolve relative to that file's own
-location, so this works even though the file itself lives at repo root). **If you change
-`require`, `suggest`, or the package name/license in `workspace/composer.json`, mirror the same
-change in the root shim** — there's no tooling enforcing this sync yet.
-
-The root `.github/workflows/ci.yml` still runs `composer install`, `scripts/secret-guard.sh`,
-etc. against the repo root — those paths currently only exist under `workspace/`, so CI as
-checked in is stale relative to this restructure. Don't assume root-level CI is green; check
-`workspace/`'s own tooling instead (see below) and flag this mismatch if asked to fix CI.
-
-**For the library's architecture, model-fallback strategy, request/response format, and full
-command reference, read `workspace/CLAUDE.md` — do not duplicate that here.**
-
-## Root-level (infra) commands
+## Common Commands
 
 ```bash
-# Bring up the full dev stack (PHP app + nginx + postgres + redis)
-docker compose up -d
+# Install dependencies (includes dev)
+composer install
 
-# Rebuild the app image after Dockerfile/devcontainer changes
-docker compose build app
+# Run all tests
+composer test
 
-# Tail logs
-docker compose logs -f app
+# Run a single test file
+./vendor/bin/phpunit tests/LoggerTest.php
+
+# Run a single test method
+./vendor/bin/phpunit tests/TranslatorTest.php --filter=testTranslate
+
+# Run tests with coverage report
+composer test-coverage
+
+# Note: No linting script in composer.json yet (CONTRIBUTING.md references "composer lint" but it's not defined)
 ```
 
-- `nginx` serves `./public` on host port 8082, proxying to the `app` container.
-- `db` (postgres:17-alpine) and `redis` are healthchecked before `app` starts (`depends_on: condition: service_healthy`).
-- Postgres password is a Docker secret at `secrets/db_user_password.txt` (gitignored, dev-only,
-  rotate freely), injected via `POSTGRES_PASSWORD_FILE` — never read or print this file (see
-  Safety below).
-- `app` runs with `cap_drop: ALL` and **no** `cap_add` — it needs zero Linux capabilities under
-  this network architecture. Don't add capabilities back without a specific reason.
-- **Network isolation (this is the core security property of this repo, not incidental):**
-  `frontend-net` and `backend-net` are both `internal: true` — `app` and `nginx` have **no
-  direct route to the internet at all**. All outbound HTTP(S) from `app` goes through
-  `egress-proxy` (squid, `.devcontainer/egress-proxy/`), which only allows a domain allowlist
-  (OVH AI Endpoints, Google Vision, Perplexity, api.anthropic.com, GitHub, Packagist — see
-  `squid.conf` to extend it). `nginx` gets its own `publish-net` (not internal) purely so Docker
-  can publish port 8082 to the host — `nginx` doesn't hold secrets or run agent code, so this is
-  an accepted, scoped exception; `app` is **not** on `publish-net`.
-  - Known consequence: `host.docker.internal` is **not reachable from `app`** (no default route
-    on an internal network) — this is intentional, not a bug. If something needs it, that's a
-    reason to stop and reconsider the network design, not to silently add a route back.
-  - Adding a new external host `app` needs to reach: edit the allowlist in
-    `.devcontainer/egress-proxy/squid.conf`, then `docker compose build egress-proxy && docker
-    compose up -d`.
+## Development Workflow
 
-## Working inside the library (`workspace/`)
+### Adding a New Language
 
-```bash
-cd workspace
-composer install          # includes dev deps (phpunit, php-cs-fixer, phpstan, grumphp)
-composer test              # trivial-assert gate + phpunit
-composer cs-check          # php-cs-fixer, dry-run
-composer cs-fix            # php-cs-fixer, applies fixes
-composer audit             # composer security audit
-composer all-checks        # cs-check + audit + test — same gate as CI
-./vendor/bin/phpunit tests/LoggerTest.php                       # single file
-./vendor/bin/phpunit tests/TranslatorTest.php --filter=testName # single method
-./vendor/bin/phpunit --testsuite integration                    # integration suite (needs real credentials)
+1. Create `resources/locales/XX.json` (where XX is language code, e.g., `de.json` for German)
+2. Copy structure from `resources/locales/pl.json` and translate all values
+3. Test by instantiating `Translator('xx', 'en')` and calling `loader->loadAll()`
+4. Add unit test in `tests/`
+
+### Adding a New Model
+
+1. Update `modelMap` in client instantiation with `'tier' => 'ModelName'`
+2. Reorder `modelPriority` as needed
+3. Verify against `docs/OVH_ENDPOINTS.md` that the model exists in OVH catalog
+
+### Commit Convention
+
+Follow the style from `CONTRIBUTING.md`:
+```
+Add:      new feature
+Fix:      bug fix
+Docs:     documentation
+Style:    formatting
+Test:     test additions/changes
+Refactor: structural changes
 ```
 
-GrumPHP (`workspace/grumphp.yml`) runs php-cs-fixer, phpstan (level 5), a composer strict
-check, and a blacklist for `var_dump()/dd()/dump()/console.log()` — treat these as pre-commit
-gates, same as CI (`.github/workflows/ci.yml` inside `workspace/`, not the stale root one).
+Example: `git commit -m "Add: batch processing retry with backoff"`
 
-## Safety rules (apply repo-wide, not just `workspace/`)
+## Key Files & Responsibilities
 
-This repo's actual purpose right now is being a template for a portable, hardened PhpStorm
-devcontainer — the OCR library is secondary. The threat model: an AI coding agent (Claude Code,
-opencode, Copilot, or anything else) running inside the `app` container must never be able to
-read or exfiltrate real API credentials, even by accident. This is enforced in layers, in order
-of how much you should actually trust each one:
+- `src/OcrClient.php`: Core orchestration, request building, model fallback
+- `src/Response/OcrResponse.php`: Response parsing, text extraction, formatting
+- `src/Exceptions/OcrException.php`: Error normalization with i18n
+- `src/Error/ErrorHandler.php`: Parses HTTP error responses into exception context
+- `src/Logging/Logger.php`: File-based structured logging
+- `src/i18n/Translator.php`, `LocaleLoader.php`: Translation system
+- `resources/locales/`: JSON locale files for error messages and text
+- `tests/`: Unit tests (Logger, Translator, Exception, Response)
+- `examples/`: Integration examples (not auto-tested—requires real OVH token)
+- `phpunit.xml`: Test configuration (bootstrap via composer autoload)
 
-1. **The real boundary: no real secret ever exists inside the bind-mounted repo tree.**
-   `docker-compose.yml` mounts the whole repo root into `app` (`.:/workspace`), so anything
-   physically present in this directory is readable by every process in the container,
-   regardless of `.gitignore` or permission configs. The real, populated `.env` lives at
-   `~/.config/ocr-ai/.env` on the host — **outside** this repo, never inside it. Only
-   `.env.example` (placeholders) is allowed in-repo. If you ever find a populated `.env` inside
-   this repo directory, treat it as an incident: move it back out immediately and flag it, don't
-   just gitignore it in place.
-   - Real API calls (manual smoke-testing against live OVH/Google Vision) happen **outside this
-     devcontainer** — host PHP or a separate, disposable container — never inside the one
-     Claude Code/PhpStorm Gateway runs in.
-2. **The second boundary: network egress allowlist** (see above) — even if a secret somehow did
-   leak into the container, there's nowhere to send it except the allowlisted API hosts.
-3. **`.claude/settings.json` (`permissions.deny`) is UX/hygiene, not a real barrier.** It blocks
-   Claude's `Read`/`Edit` tools and a few recognized Bash commands (`cat`, `head`, `tail`, `sed`,
-   plus explicit `grep`/`less`/`strings`/etc. rules here) from touching `.env*`/`secrets/**`.
-   It does **not** stop an arbitrary subprocess that opens the file itself (`php -r
-   "readfile(...)"`, a Python one-liner, an unrecognized command). Don't add more Bash deny
-   patterns expecting this to become a real sandbox — it can't be, by design of how Bash pattern
-   matching works. If you need OS-level enforcement, that's boundary #1, not this.
-   `workspace/opencode.json` has an equivalent, older deny-config for opencode specifically (with
-   a known bug where subagents can bypass its `read`/`grep` deny) — keep both in sync if you
-   change one.
-- **Never read, print, or edit secrets or `.env*` files**, even placeholders that look real.
-  Refer to variables by name only (e.g. `OVH_AI_ENDPOINTS_ACCESS_TOKEN`), never by value.
-- **Don't follow indirection outside the repo** — e.g. `GOOGLE_APPLICATION_CREDENTIALS` in a
-  real `.env` can point at a path like `/opt/vision/vision-login.json` outside this checkout. A
-  past incident here was exactly a real Vision service-account key sitting outside the repo and
-  getting read by an agent; don't read files outside the repo tree without explicit permission.
-- **Never modify anything inside `vendor/`.**
-- Prefer small, reviewable, exactly-what-was-asked changes — no unrequested "improvements" or
-  new dependencies.
+## Testing Notes
+
+- **Covered**: Translator fallback, Logger formatting, OcrResponse parsing, OcrException messages, i18n edge cases
+- **NOT covered**: Real HTTP calls to OVH or Google Vision (requires authentication)
+- Tests use mocked JSON responses from `tests/` to simulate API behavior
+- Bootstrap: `vendor/autoload.php` automatically loads PSR-4 classes
+- To run specific test: `./vendor/bin/phpunit tests/YourTest.php --filter=methodName`
+
+## Environment & Dependencies
+
+- **PHP**: 8.1+ (typed properties, match expressions, nullsafe operator)
+- **Core deps**: `guzzlehttp/guzzle` ^7.5 for HTTP
+- **Dev deps**: `phpunit` ^10.0, `phpdotenv` ^5.5
+- **.env setup**: Copy `.env.example`, fill `OVH_AI_ENDPOINTS_ACCESS_TOKEN` (and optionally `GOOGLE_API_KEY` if using Google fallback)
+
+## Rate Limits & Constraints
+
+- OVH: 400 req/min per project token; 2 req/min without token
+- Max file size: 20 MB (library enforces this; OVH limit may be smaller)
+- Supported formats: JPG, PNG, WebP, GIF
+- Visual LLMs can hallucinate—not recommended for legal/medical docs without verification
+
+## Known Limitations
+
+- Batch processing has no built-in retry with backoff—add this if processing thousands of files
+- No async support yet (all requests are blocking)
+- Google Vision fallback is opt-in (disabled by default)
+- Real HTTP testing requires OVH credentials
+
+## Useful Resources
+
+- [OVH AI Endpoints Documentation](docs/OVH_ENDPOINTS.md)
+- [Contribution Guidelines](CONTRIBUTING.md)
+- [Setup & Publishing to GitHub/Packagist](SETUP_GITHUB.md)
+- [Main README](README.md) for user-facing documentation
